@@ -1,11 +1,11 @@
 Main	= ->
+	PLAYER_SPEED	= 1000
 	# provides the data necessary to render a tiled image
 	tileMap		= null
 	# renders an image using tile map data
 	tileLayer	= null
 
-	animsAtlas	= null
-	legAnim		= null
+	player		= null
 
 	cursors		= null
 
@@ -34,48 +34,51 @@ Main	= ->
 			# make game world size of camera
 			tileLayer.resizeWorld()
 
+			# add some extra layers
+			# this works but runs slow :(
+			tileMap.createLayer("floor_blend")
+			tileMap.createLayer("walls")
+			tileMap.createLayer("lights")
+			tileMap.createLayer("decor_02")
+
 			# sprite sheet image
-			animsAtlas	= game.add.sprite(0, 0, "anims")
+			player		= game.add.sprite(0, 0, "anims")
+
 			# new id, array of frames, framerate, loop
-			animsAtlas.animations.add("large_explosion",
+			player.animations.add("walk_anim",
 				# file name prefix, start num, end num, postfix, num padding
-				Phaser.Animation.generateFrameNames(
-					"landmine_explosion_large_", 0, 29, ".png", 4
-				), 25, true
-			)
-			animsAtlas.animations.play("large_explosion")
-
-			# and another one
-			legAnim		= game.add.sprite(0, 0, "anims")
-
-			legAnim.animations.add("walk_anim",
 				Phaser.Animation.generateFrameNames("walk_down_", 0, 29,
 					".png", 4), 25, true)
-			legAnim.animations.play("walk_anim")
+			player.animations
+			.play("walk_anim")
+			.stop()
 
-			game.physics.arcade.enable(legAnim)
+			game.physics.arcade.enable(player)
 
-			legAnim.body.collideWorldBounds	= true
+			player.body.collideWorldBounds	= true
 
 			# input
 			cursors	= game.input.keyboard.createCursorKeys()
 
 			# camera
-			game.camera.follow(legAnim)
+			game.camera.follow(player)
 			
 		update:->
-			legAnim.body.velocity.x	=
-			legAnim.body.velocity.y	= 0
+			velocity	= player.body.velocity.set(0, 0)			
 
 			if cursors.right.isDown
-				legAnim.body.velocity.x	+= 150
+				velocity.x	+= 1
 
 			if cursors.left.isDown
-				legAnim.body.velocity.x	-= 150
+				velocity.x	-= 1
 			
 			if cursors.up.isDown
-				legAnim.body.velocity.y	-= 150
+				velocity.y	-= 1
 			
 			if cursors.down.isDown
-				legAnim.body.velocity.y	+= 150
+				velocity.y	+= 1
+
+			velocity
+			.normalize()
+			.multiply(PLAYER_SPEED, PLAYER_SPEED)
 	)
