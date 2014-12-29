@@ -5,6 +5,9 @@ Main	= ->
 	tileLayer	= null
 
 	animsAtlas	= null
+	legAnim		= null
+
+	cursors		= null
 
 	game	= new Phaser.Game(800, 600, Phaser.AUTO, "content-main"
 		preload:->
@@ -19,6 +22,9 @@ Main	= ->
 				Phaser.Loader.TEXTURE_ATLAS_JSON_HASH)
 
 		create:->
+			# physics system
+			game.physics.startSystem(Phaser.Physics.ARCADE)
+
 			# tiled bg
 			tileMap		= game.add.tilemap("map")
 			# tileset name (from json), image id
@@ -40,12 +46,36 @@ Main	= ->
 			animsAtlas.animations.play("large_explosion")
 
 			# and another one
-			legAnim		= game.add.sprite(400, 0, "anims")
+			legAnim		= game.add.sprite(0, 0, "anims")
 
 			legAnim.animations.add("walk_anim",
 				Phaser.Animation.generateFrameNames("walk_down_", 0, 29,
 					".png", 4), 25, true)
 			legAnim.animations.play("walk_anim")
 
+			game.physics.arcade.enable(legAnim)
+
+			legAnim.body.collideWorldBounds	= true
+
+			# input
+			cursors	= game.input.keyboard.createCursorKeys()
+
+			# camera
+			game.camera.follow(legAnim)
+			
 		update:->
+			legAnim.body.velocity.x	=
+			legAnim.body.velocity.y	= 0
+
+			if cursors.right.isDown
+				legAnim.body.velocity.x	+= 150
+
+			if cursors.left.isDown
+				legAnim.body.velocity.x	-= 150
+			
+			if cursors.up.isDown
+				legAnim.body.velocity.y	-= 150
+			
+			if cursors.down.isDown
+				legAnim.body.velocity.y	+= 150
 	)
