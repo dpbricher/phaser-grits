@@ -1,19 +1,22 @@
-Main	= ->
+require ["lib/phaser.min"], ->
 	PLAYER_SPEED	= 500
+	RELOAD_TIME		= 0.2
+
 	# provides the data necessary to render a tiled image
-	tileMap		= null
+	tileMap			= null
 	# renders an image using tile map data
-	tileLayer	= null
+	tileLayer		= null
 
 	# groups
-	groupProj	= null
+	groupProj		= null
 
-	player		= null
+	player			= null
+	lastFireTime	= 0
 
-	moveKeys	= null
-	cursors		= null
+	moveKeys		= null
+	cursors			= null
 
-	game	= new Phaser.Game(800, 600, Phaser.AUTO, "content-main"
+	game			= new Phaser.Game(800, 600, Phaser.AUTO, "content-main"
 		preload:->
 			# tiled bg
 			game.load.tilemap("map", "data/map1.json", null,
@@ -64,6 +67,8 @@ Main	= ->
 
 			player.body.collideWorldBounds	= true
 
+			lastFireTime	= game.time.totalElapsedSeconds()
+
 			# input
 			keyboard	= game.input.keyboard
 
@@ -79,20 +84,20 @@ Main	= ->
 
 			# camera
 			game.camera.follow(player)
-			
+
 		update:->
 			# movement
-			velocity	= player.body.velocity.set(0, 0)			
+			velocity	= player.body.velocity.set(0, 0)
 
 			if moveKeys.right.isDown
 				velocity.x	+= 1
 
 			if moveKeys.left.isDown
 				velocity.x	-= 1
-			
+
 			if moveKeys.up.isDown
 				velocity.y	-= 1
-			
+
 			if moveKeys.down.isDown
 				velocity.y	+= 1
 
@@ -104,18 +109,19 @@ Main	= ->
 			velocity	= new Phaser.Point()
 
 			if cursors.right.isDown
-				velocity.x	+= PLAYER_SPEED
+				velocity.x	+= 1
 
 			if cursors.left.isDown
-				velocity.x	-= PLAYER_SPEED
+				velocity.x	-= 1
 
 			if cursors.up.isDown
-				velocity.y	-= PLAYER_SPEED
+				velocity.y	-= 1
 
 			if cursors.down.isDown
-				velocity.y	+= PLAYER_SPEED
-			
-			if !velocity.isZero()
+				velocity.y	+= 1
+
+			if !velocity.isZero() and
+			game.time.totalElapsedSeconds() - lastFireTime >= RELOAD_TIME
 				bullet	= groupProj.create(player.body.position.x,
 					player.body.position.y, "anims")
 
@@ -127,5 +133,12 @@ Main	= ->
 
 				game.physics.arcade.enable(bullet)
 
+				velocity.normalize()
+
+				bullet.rotation	= velocity.angle(new Phaser.Point(0, 0))
+
 				bullet.body.velocity	= velocity
+				.multiply(PLAYER_SPEED, PLAYER_SPEED)
+
+				lastFireTime			= game.time.totalElapsedSeconds()
 	)
