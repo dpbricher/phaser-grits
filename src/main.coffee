@@ -147,6 +147,8 @@ require ["lib/phaser.min"], ->
 
 				game.physics.arcade.enable(bullet)
 
+				bullet.body.setSize(10, 10)
+
 				velocity.normalize()
 
 				bullet.rotation	= velocity.angle(new Phaser.Point())
@@ -159,7 +161,17 @@ require ["lib/phaser.min"], ->
 			# collision
 			game.physics.arcade.collide(player, wallLayer)
 
+			# bullets often pass through walls... -_-
+			game.physics.arcade.overlap(groupProj, wallLayer, (proj, wall)->
+				proj.kill()
+			)
+
 		render:->
 			game.debug.body(player)
 
+			groupProj.forEach(
+				(proj)->
+					game.debug.body(proj)
+				@
+			)
 	)
