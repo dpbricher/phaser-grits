@@ -7,6 +7,7 @@ require ["lib/phaser.min"], ->
 	tileMap			= null
 	# renders an image using tile map data
 	tileLayer		= null
+	wallLayer		= null
 
 	# groups
 	groupProj		= null
@@ -43,11 +44,13 @@ require ["lib/phaser.min"], ->
 			tileLayer.resizeWorld()
 
 			# add some extra layers
-			# this works but runs slow :(
-			# tileMap.createLayer("floor_blend")
-			# tileMap.createLayer("walls")
-			# tileMap.createLayer("lights")
-			# tileMap.createLayer("decor_02")
+			tileMap.createLayer("floor_blend")
+			wallLayer	= tileMap.createLayer("walls")
+			tileMap.createLayer("lights")
+			tileMap.createLayer("decor_02")
+
+			# create collision on walls
+			tileMap.setCollisionByExclusion([], true, "walls")
 
 			# create groups
 			groupProj	= game.add.group()
@@ -68,6 +71,8 @@ require ["lib/phaser.min"], ->
 			game.physics.arcade.enable(player)
 
 			player.body.collideWorldBounds	= true
+			# shrink player physical dimensions
+			player.body.setSize(player.body.width / 2, player.body.height / 2)
 
 			lastFireTime	= game.time.totalElapsedSeconds()
 
@@ -130,8 +135,8 @@ require ["lib/phaser.min"], ->
 			if !velocity.isZero() and
 			game.time.totalElapsedSeconds() - lastFireTime >= RELOAD_TIME
 				bullet	= groupProj.create(
-					player.body.position.x + player.width / 2,
-					player.body.position.y + player.height / 2, "anims")
+					player.body.position.x + player.body.width / 2,
+					player.body.position.y + player.body.height / 2, "anims")
 				bullet.anchor.set(0.5, 0.5)
 
 				bullet.animations.add("bullet",
@@ -150,4 +155,11 @@ require ["lib/phaser.min"], ->
 				.multiply(PROJECTILE_SPEED, PROJECTILE_SPEED)
 
 				lastFireTime			= game.time.totalElapsedSeconds()
+
+			# collision
+			game.physics.arcade.collide(player, wallLayer)
+
+		render:->
+			game.debug.body(player)
+
 	)
