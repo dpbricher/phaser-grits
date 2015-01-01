@@ -1,6 +1,7 @@
 require ["lib/phaser.min"], ->
-	PLAYER_SPEED	= 500
-	RELOAD_TIME		= 0.2
+	PLAYER_SPEED		= 500
+	PROJECTILE_SPEED	= 1000
+	RELOAD_TIME			= 0.2
 
 	# provides the data necessary to render a tiled image
 	tileMap			= null
@@ -52,7 +53,8 @@ require ["lib/phaser.min"], ->
 			groupProj	= game.add.group()
 
 			# sprite sheet image
-			player		= game.add.sprite(1220, 1220, "anims")
+			player		= game.add.sprite(1284, 1284, "anims")
+			player.anchor.set(0.5, 0.5)
 
 			# new id, array of frames, framerate, loop
 			player.animations.add("walk_anim",
@@ -122,8 +124,10 @@ require ["lib/phaser.min"], ->
 
 			if !velocity.isZero() and
 			game.time.totalElapsedSeconds() - lastFireTime >= RELOAD_TIME
-				bullet	= groupProj.create(player.body.position.x,
-					player.body.position.y, "anims")
+				bullet	= groupProj.create(
+					player.body.position.x + player.width / 2,
+					player.body.position.y + player.height / 2, "anims")
+				bullet.anchor.set(0.5, 0.5)
 
 				bullet.animations.add("bullet",
 					Phaser.Animation.generateFrameNames(
@@ -138,7 +142,7 @@ require ["lib/phaser.min"], ->
 				bullet.rotation	= velocity.angle(new Phaser.Point(0, 0))
 
 				bullet.body.velocity	= velocity
-				.multiply(PLAYER_SPEED, PLAYER_SPEED)
+				.multiply(PROJECTILE_SPEED, PROJECTILE_SPEED)
 
 				lastFireTime			= game.time.totalElapsedSeconds()
 	)
