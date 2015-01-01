@@ -24,12 +24,10 @@ require(["lib/phaser.min"], function() {
       tileMap.addTilesetImage("grits_master", "map_tiles");
       tileLayer = tileMap.createLayer("floor");
       tileLayer.resizeWorld();
-      tileMap.createLayer("floor_blend");
-      tileMap.createLayer("walls");
       groupProj = game.add.group();
       player = game.add.sprite(1284, 1284, "anims");
       player.anchor.set(0.5, 0.5);
-      player.animations.add("walk_anim", Phaser.Animation.generateFrameNames("walk_down_", 0, 29, ".png", 4), 25, true);
+      player.animations.add("walk_anim", Phaser.Animation.generateFrameNames("walk_left_", 0, 29, ".png", 4), 25, true);
       player.animations.play("walk_anim").stop();
       game.physics.arcade.enable(player);
       player.body.collideWorldBounds = true;
@@ -60,6 +58,10 @@ require(["lib/phaser.min"], function() {
         velocity.y += 1;
       }
       velocity.normalize().multiply(PLAYER_SPEED, PLAYER_SPEED);
+      if (!velocity.isZero()) {
+        player.rotation = velocity.angle(new Phaser.Point());
+        player.animations.next(1);
+      }
       velocity = new Phaser.Point();
       if (cursors.right.isDown) {
         velocity.x += 1;
@@ -80,7 +82,7 @@ require(["lib/phaser.min"], function() {
         bullet.animations.play("bullet");
         game.physics.arcade.enable(bullet);
         velocity.normalize();
-        bullet.rotation = velocity.angle(new Phaser.Point(0, 0));
+        bullet.rotation = velocity.angle(new Phaser.Point());
         bullet.body.velocity = velocity.multiply(PROJECTILE_SPEED, PROJECTILE_SPEED);
         return lastFireTime = game.time.totalElapsedSeconds();
       }

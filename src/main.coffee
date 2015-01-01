@@ -44,8 +44,8 @@ require ["lib/phaser.min"], ->
 
 			# add some extra layers
 			# this works but runs slow :(
-			tileMap.createLayer("floor_blend")
-			tileMap.createLayer("walls")
+			# tileMap.createLayer("floor_blend")
+			# tileMap.createLayer("walls")
 			# tileMap.createLayer("lights")
 			# tileMap.createLayer("decor_02")
 
@@ -59,7 +59,7 @@ require ["lib/phaser.min"], ->
 			# new id, array of frames, framerate, loop
 			player.animations.add("walk_anim",
 				# file name prefix, start num, end num, postfix, num padding
-				Phaser.Animation.generateFrameNames("walk_down_", 0, 29,
+				Phaser.Animation.generateFrameNames("walk_left_", 0, 29,
 					".png", 4), 25, true)
 			player.animations
 			.play("walk_anim")
@@ -107,6 +107,11 @@ require ["lib/phaser.min"], ->
 			.normalize()
 			.multiply(PLAYER_SPEED, PLAYER_SPEED)
 
+			# if player is moving then advance walk animation
+			if !velocity.isZero()
+				player.rotation	= velocity.angle(new Phaser.Point())
+				player.animations.next(1)
+
 			# fire projectiles
 			velocity	= new Phaser.Point()
 
@@ -139,7 +144,7 @@ require ["lib/phaser.min"], ->
 
 				velocity.normalize()
 
-				bullet.rotation	= velocity.angle(new Phaser.Point(0, 0))
+				bullet.rotation	= velocity.angle(new Phaser.Point())
 
 				bullet.body.velocity	= velocity
 				.multiply(PROJECTILE_SPEED, PROJECTILE_SPEED)
