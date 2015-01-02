@@ -20,6 +20,9 @@ require ["lib/phaser.min"], ->
 	player			= null
 	lastFireTime	= 0
 
+	# Phaser.Point player spawn location
+	playerSpawn		= null
+
 	moveKeys		= null
 	cursors			= null
 
@@ -111,6 +114,10 @@ require ["lib/phaser.min"], ->
 					when "QuadDamageSpawner"
 						createCanister("quad_damage", "quad_damage_")
 
+					when "Team0Spawn0"
+						playerSpawn	= new Phaser.Point(obj.x + obj.width / 2,
+							obj.y + obj.height / 2)
+
 					when "TP"
 						teleporter	= groupTeleport.create(obj.x, obj.y,
 							"anims")
@@ -133,7 +140,8 @@ require ["lib/phaser.min"], ->
 			# game.physics.arcade.enable(groupSpawn)
 
 			# sprite sheet image
-			player		= game.add.sprite(1284, 1284, "anims")
+			player		= game.add.sprite(playerSpawn.x, playerSpawn.y,
+				"anims")
 			player.anchor.set(0.5, 0.5)
 
 			# new id, array of frames, framerate, loop
