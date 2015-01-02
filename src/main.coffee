@@ -11,6 +11,9 @@ require ["lib/phaser.min"], ->
 
 	# groups
 	groupProj		= null
+	groupWall		= null
+	# group for player but not proj collision objects
+	groupHole		= null
 
 	player			= null
 	lastFireTime	= 0
@@ -36,6 +39,8 @@ require ["lib/phaser.min"], ->
 
 			# tiled bg
 			tileMap		= game.add.tilemap("map")
+
+			# console.log tileMap.objects
 			# tileset name (from json), image id
 			tileMap.addTilesetImage("grits_master", "map_tiles")
 			# layer name (from json)
@@ -50,10 +55,28 @@ require ["lib/phaser.min"], ->
 			tileMap.createLayer("decor_02")
 
 			# create collision on walls
-			tileMap.setCollisionByExclusion([], true, "walls")
+			# tileMap.setCollisionByExclusion([], true, "walls")
 
 			# create groups
 			groupProj	= game.add.group()
+			groupWall	= game.add.group()
+			groupHole	= game.add.group()
+
+			# create sprites with null images for each collision area
+			for obj in tileMap.objects.collision
+				group	=
+					if obj.properties.collisionFlags
+					then groupHole
+					else groupWall
+
+				wall	= group.create(obj.x, obj.y, null)
+				game.physics.arcade.enable(wall)
+				# this doesn't work...
+				# wall.body.setSize(0, 0, obj.width, obj.height)
+				wall.body.width		= obj.width
+				wall.body.height	= obj.height
+
+				wall.body.immovable	= true
 
 			# sprite sheet image
 			player		= game.add.sprite(1284, 1284, "anims")
@@ -159,19 +182,31 @@ require ["lib/phaser.min"], ->
 				lastFireTime			= game.time.totalElapsedSeconds()
 
 			# collision
-			game.physics.arcade.collide(player, wallLayer)
+			game.physics.arcade.collide(player, groupWall)
+			game.physics.arcade.collide(player, groupHole)
 
-			# bullets often pass through walls... -_-
-			game.physics.arcade.overlap(groupProj, wallLayer, (proj, wall)->
-				proj.kill()
-			)
+			# doesn't work correctly
+			# game.physics.arcade.overlap(groupProj, groupWall,
+			# 	(proj, wall)->
+			# 		proj.kill()
+			# )
 
 		render:->
 			game.debug.body(player)
 
-			groupProj.forEach(
+			# groupProj.forEach(
+			# 	(proj)->
+			# 		game.debug.body(proj)
+			# 	@
+			# )
+			groupWall.forEach(
 				(proj)->
 					game.debug.body(proj)
+				@
+			)
+			groupHole.forEach(
+				(proj)->
+					game.debug.body(proj, "rgba(0, 0, 255, 0.4)")
 				@
 			)
 	)
