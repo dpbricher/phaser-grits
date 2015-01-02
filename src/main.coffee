@@ -299,19 +299,23 @@ require ["lib/phaser.min"], ->
 
 			now		= game.time.totalElapsedSeconds()
 
+			# bullet collision here; group on group collision doesn't seem to
+			# work
+			groupWall.forEach(
+				(wall)->
+					groupProj.forEachAlive(
+						(proj)->
+							if wall.body.hitTest(proj.x, proj.y)
+								proj.kill()
+					)
+			)
+
 			# spawn item generation
 			groupSpawn.forEach(
 				(s)->
 					if now >= s.lastCollectTime + 3.0
 						s.visible	= true
 			)
-
-			# doesn't work correctly
-			# game.physics.arcade.overlap(groupProj, groupWall,
-			# 	(proj, wall)->
-			# 		proj.kill()
-			# )
-			# console.log player.body.position
 
 		render:->
 			game.debug.body(player)
