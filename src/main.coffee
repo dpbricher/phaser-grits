@@ -16,9 +16,15 @@ require ["lib/phaser.min"], ->
 	groupHole		= null
 	groupSpawn		= null
 	groupTeleport	= null
+	# player body visual elements
+	groupBody		= null
 
 	player			= null
 	lastFireTime	= 0
+
+	playerBody	 	= null
+	playerArmLeft 	= null
+	playerArmRight 	= null
 
 	# Phaser.Point player spawn location
 	playerSpawn		= null
@@ -159,6 +165,29 @@ require ["lib/phaser.min"], ->
 			# shrink player physical dimensions
 			player.body.setSize(player.body.width / 2, player.body.height / 2)
 
+			groupBody		= game.add.group()
+
+			playerBody		= groupBody.create(0, 0, "anims")
+			playerBody.anchor.set(0.5, 0.5)
+
+			playerBody.animations.add("turret", ["turret.png"], 25, true)
+			playerBody.animations.play("turret")
+
+			playerArmLeft	= groupBody.create(0, 0, "anims")
+			playerArmLeft.anchor.set(0.5, 0.5)
+
+			playerArmLeft.animations.add("machinegun", ["machinegun.png"], 25,
+				true)
+			playerArmLeft.animations.play("machinegun")
+
+			playerArmRight	= groupBody.create(0, 0, "anims")
+			playerArmRight.anchor.set(0.5, 0.5)
+			playerArmRight.scale.set(1.0, -1.0)
+
+			playerArmRight.animations.add("machinegun", ["machinegun.png"], 25,
+				true)
+			playerArmRight.animations.play("machinegun")
+
 			lastFireTime	= game.time.totalElapsedSeconds()
 
 			# input
@@ -202,6 +231,13 @@ require ["lib/phaser.min"], ->
 				player.rotation	= velocity.angle(new Phaser.Point())
 				player.animations.next(1)
 
+			bodyCentreX		= player.body.x + player.body.width / 2
+			bodyCentreY		= player.body.y + player.body.height / 2
+
+			# player body and arms
+			groupBody.x		= bodyCentreX
+			groupBody.y		= bodyCentreY
+
 			# fire projectiles
 			velocity	= new Phaser.Point()
 
@@ -236,7 +272,8 @@ require ["lib/phaser.min"], ->
 
 				velocity.normalize()
 
-				bullet.rotation	= velocity.angle(new Phaser.Point())
+				groupBody.rotation	=
+				bullet.rotation		= velocity.angle(new Phaser.Point())
 
 				bullet.body.velocity	= velocity
 				.multiply(PROJECTILE_SPEED, PROJECTILE_SPEED)
