@@ -14,6 +14,8 @@ require ["lib/phaser.min"], ->
 	groupWall		= null
 	# group for player but not proj collision objects
 	groupHole		= null
+	groupSpawn		= null
+	groupTeleport	= null
 
 	player			= null
 	lastFireTime	= 0
@@ -58,9 +60,11 @@ require ["lib/phaser.min"], ->
 			# tileMap.setCollisionByExclusion([], true, "walls")
 
 			# create groups
-			groupProj	= game.add.group()
-			groupWall	= game.add.group()
-			groupHole	= game.add.group()
+			groupProj		= game.add.group()
+			groupWall		= game.add.group()
+			groupHole		= game.add.group()
+			groupSpawn		= game.add.group()
+			groupTeleport	= game.add.group()
 
 			# create sprites with null images for each collision area
 			for obj in tileMap.objects.collision
@@ -77,6 +81,36 @@ require ["lib/phaser.min"], ->
 				wall.body.height	= obj.height
 
 				wall.body.immovable	= true
+
+			# create spawners from tile map
+			for obj in tileMap.objects.environment
+				if obj.properties.destination?
+					teleporter	= groupTeleport.create(obj.x, obj.y, "anims")
+					teleporter.anchor.set(0.5, 0.5)
+
+					teleporter.animations.add("teleporter",
+						Phaser.Animation.generateFrameNames(
+							"teleporter_idle_", 0, 15, ".png", 4), 25,
+							true)
+					teleporter.animations.play("teleporter")
+
+					game.physics.arcade.enable(teleporter)
+
+					teleDest	= /([\d\.]*)\s*,\s*([\d\.]*)/
+						.exec(obj.properties.destination)
+
+					teleporter.destX	= parseFloat(teleDest[1] || 0);
+					teleporter.destY	= parseFloat(teleDest[2] || 0);
+
+				if obj.properties.SpawnItem?
+					item	= groupSpawn.create(obj.x, obj.y, "anims")
+					item.anchor.set(0.5, 0.5)
+
+					item.animations.add("canister",
+						Phaser.Animation.generateFrameNames(
+							"energy_canister_blue_", 0, 15, ".png", 4), 25,
+							true)
+					item.animations.play("canister")
 
 			# sprite sheet image
 			player		= game.add.sprite(1284, 1284, "anims")
@@ -182,14 +216,21 @@ require ["lib/phaser.min"], ->
 				lastFireTime			= game.time.totalElapsedSeconds()
 
 			# collision
-			game.physics.arcade.collide(player, groupWall)
-			game.physics.arcade.collide(player, groupHole)
+			# game.physics.arcade.collide(player, groupWall)
+			# game.physics.arcade.collide(player, groupHole)
+
+			game.physics.arcade.overlap(player, groupTeleport,
+				(p, t)->
+					player.body.x	= game.world.width * (t.destX / 100)
+					player.body.y	= game.world.height * (t.destY / 100)
+			)
 
 			# doesn't work correctly
 			# game.physics.arcade.overlap(groupProj, groupWall,
 			# 	(proj, wall)->
 			# 		proj.kill()
 			# )
+			# console.log player.body.position
 
 		render:->
 			game.debug.body(player)
@@ -199,6 +240,11 @@ require ["lib/phaser.min"], ->
 			# 		game.debug.body(proj)
 			# 	@
 			# )
+			groupTeleport.forEach(
+				(proj)->
+					game.debug.body(proj, "rgba(255, 0, 0, 0.4)")
+				@
+			)
 			groupWall.forEach(
 				(proj)->
 					game.debug.body(proj)
