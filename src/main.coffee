@@ -9,6 +9,9 @@ require ["lib/phaser.min"], ->
 	tileLayer		= null
 	wallLayer		= null
 
+	musicLoop		= null
+	sfx				= null
+
 	# groups
 	groupProj		= null
 	groupWall		= null
@@ -44,9 +47,29 @@ require ["lib/phaser.min"], ->
 				"data/grits_effects.json", null,
 				Phaser.Loader.TEXTURE_ATLAS_JSON_HASH)
 
+			# audio
+			game.load.audio("music", "sounds/bg_game.ogg", true)
+			game.load.audio("mach_fire", "sounds/machine_shoot0.ogg", true)
+			game.load.audio("bounce", "sounds/bounce0.ogg", true)
+			game.load.audio("energy", "sounds/energy_pickup.ogg", true)
+			game.load.audio("item", "sounds/item_pickup0.ogg", true)
+			game.load.audio("quad", "sounds/quad_pickup.ogg", true)
+
 		create:->
 			# physics system
 			game.physics.startSystem(Phaser.Physics.ARCADE)
+
+			# audio
+			# key, volume, loop
+			musicLoop	= game.add.audio("music", 0.5, true)
+			musicLoop.play()
+
+			sfx			=
+				bounce:game.add.audio("bounce")
+				energy:game.add.audio("energy")
+				item:game.add.audio("item")
+				quad:game.add.audio("quad")
+				fire:game.add.audio("mach_fire")
 
 			# tiled bg
 			tileMap		= game.add.tilemap("map")
@@ -92,7 +115,7 @@ require ["lib/phaser.min"], ->
 				wall.body.immovable	= true
 
 			# create spawners from tile map
-			createCanister			= (animName, animFramePrefix)->
+			createCanister			= (animName, animFramePrefix, audio)->
 				item	= groupSpawn.create(obj.x, obj.y, "anims")
 				item.anchor.set(0.5, 0.5)
 
@@ -100,6 +123,8 @@ require ["lib/phaser.min"], ->
 					Phaser.Animation.generateFrameNames(animFramePrefix, 0, 15,
 						".png", 4), 25, true)
 				item.animations.play(animName)
+
+				item.audio				= audio
 
 				item.lastCollectTime	= 0
 
@@ -111,14 +136,14 @@ require ["lib/phaser.min"], ->
 				switch obj.name
 					when "HealthSpawner"
 						createCanister("canister_health",
-							"energy_canister_red_")
+							"energy_canister_red_", sfx.item)
 
 					when "EnergySpawner"
 						createCanister("canister_energy",
-							"energy_canister_blue_")
+							"energy_canister_blue_", sfx.energy)
 
 					when "QuadDamageSpawner"
-						createCanister("quad_damage", "quad_damage_")
+						createCanister("quad_damage", "quad_damage_", sfx.quad)
 
 					when "Team0Spawn0"
 						playerSpawn	= new Phaser.Point(obj.x + obj.width / 2,
@@ -278,6 +303,8 @@ require ["lib/phaser.min"], ->
 				bullet.body.velocity	= velocity
 				.multiply(PROJECTILE_SPEED, PROJECTILE_SPEED)
 
+				sfx.fire.play()
+
 				lastFireTime			= game.time.totalElapsedSeconds()
 
 			# collision
@@ -288,6 +315,7 @@ require ["lib/phaser.min"], ->
 				(p, t)->
 					player.body.x	= game.world.width * (t.destX / 100)
 					player.body.y	= game.world.height * (t.destY / 100)
+					sfx.bounce.play()
 			)
 
 			game.physics.arcade.overlap(player, groupSpawn,
@@ -295,6 +323,7 @@ require ["lib/phaser.min"], ->
 					if s.visible
 						s.visible			= false
 						s.lastCollectTime	= game.time.totalElapsedSeconds()
+						s.audio.play()
 			)
 
 			now		= game.time.totalElapsedSeconds()
