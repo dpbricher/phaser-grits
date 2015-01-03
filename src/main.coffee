@@ -21,6 +21,8 @@ require ["lib/phaser.min"], ->
 	groupTeleport	= null
 	# player body visual elements
 	groupBody		= null
+	# group for visual effects that have no physics
+	groupVisual		= null
 
 	player			= null
 	lastFireTime	= 0
@@ -87,6 +89,9 @@ require ["lib/phaser.min"], ->
 			wallLayer	= tileMap.createLayer("walls")
 			tileMap.createLayer("lights")
 			tileMap.createLayer("decor_02")
+
+			# don't know if this actually helps or not; need to look into it
+			tileMap.cacheAsBitmap	= true
 
 			# create collision on walls
 			# tileMap.setCollisionByExclusion([], true, "walls")
@@ -168,8 +173,6 @@ require ["lib/phaser.min"], ->
 						teleporter.destX	= parseFloat(teleDest[1] || 0);
 						teleporter.destY	= parseFloat(teleDest[2] || 0);
 
-			# game.physics.arcade.enable(groupSpawn)
-
 			# sprite sheet image
 			player		= game.add.sprite(playerSpawn.x, playerSpawn.y,
 				"anims")
@@ -191,6 +194,7 @@ require ["lib/phaser.min"], ->
 			player.body.setSize(player.body.width / 2, player.body.height / 2)
 
 			groupBody		= game.add.group()
+			groupVisual		= game.add.group()
 
 			playerBody		= groupBody.create(0, 0, "anims")
 			playerBody.anchor.set(0.5, 0.5)
@@ -303,6 +307,19 @@ require ["lib/phaser.min"], ->
 				bullet.body.velocity	= velocity
 				.multiply(PROJECTILE_SPEED, PROJECTILE_SPEED)
 
+				# left and right weapon muzzle animations
+				for i in [0, 1]
+					muzzle	= groupBody.create(0, 0, "anims")
+					muzzle.anchor.set(0.5, 0.5)
+
+					muzzle.animations.add("muzzle",
+						Phaser.Animation.generateFrameNames(
+							"machinegun_muzzle_", 0, 7, ".png", 4),
+						25, true)
+					muzzle.play("muzzle", null, false, true)
+
+				muzzle.scale.set(1.0, -1.0)
+
 				sfx.fire.play()
 
 				lastFireTime			= game.time.totalElapsedSeconds()
@@ -336,6 +353,18 @@ require ["lib/phaser.min"], ->
 						(proj)->
 							if wall.body.hitTest(proj.x, proj.y)
 								proj.kill()
+
+								# create bullet death anim
+								anim	= groupVisual.create(proj.x, proj.y
+									"anims")
+								anim.anchor.set(0.5, 0.5)
+
+								anim.animations.add("impact",
+									Phaser.Animation.generateFrameNames(
+										"machinegun_impact_", 0, 7, ".png", 4),
+									25, true
+								)
+								anim.play("impact", null, false, true)
 					)
 			)
 
@@ -347,13 +376,13 @@ require ["lib/phaser.min"], ->
 			)
 
 		render:->
-			game.debug.body(player)
+			game.debug.body(player, "rgba(0, 255, 255, 0.4)")
 
-			# groupProj.forEach(
-			# 	(proj)->
-			# 		game.debug.body(proj)
-			# 	@
-			# )
+			groupProj.forEach(
+				(proj)->
+					game.debug.body(proj, "rgba(255, 0, 255, 0.4)")
+				@
+			)
 			groupSpawn.forEach(
 				(proj)->
 					game.debug.body(proj, "rgba(255, 255, 0, 0.4)")
