@@ -26,6 +26,7 @@ require ["lib/phaser.min"], ->
 	groupBody2		= null
 	# group for visual effects that have no physics
 	groupVisual		= null
+	groupText		= null
 
 	player1			= null
 	player2			= null
@@ -107,6 +108,7 @@ require ["lib/phaser.min"], ->
 			groupBody		= game.add.group()
 			groupBody2		= game.add.group()
 			groupVisual		= game.add.group()
+			groupText		= game.add.group()
 
 			# create sprites with null images for each collision area
 			for obj in tileMap.objects.collision
@@ -190,6 +192,7 @@ require ["lib/phaser.min"], ->
 					armLeft:bodyGroup.create(0, 0, "anims")
 					armRight:bodyGroup.create(0, 0, "anims")
 					lastFireTime:game.time.totalElapsedSeconds()
+					healthDisplay:game.add.text(x, y, "")
 
 				for key, sprite of player
 					if typeof(sprite) is "object"
@@ -199,10 +202,11 @@ require ["lib/phaser.min"], ->
 					# file name prefix, start num, end num, postfix, num padding
 					Phaser.Animation.generateFrameNames("walk_left_", 0, 29,
 						".png", 4), 25, true)
-				# player2.animations
 				player.legs
 				.play("walk_anim")
 				.stop()
+
+				player.legs.health		= 100
 
 				player.legs.bodyGroup	= bodyGroup
 
@@ -225,9 +229,12 @@ require ["lib/phaser.min"], ->
 
 				return player
 
-			player1		= createPlayer(playerSpawn.x, playerSpawn.y, groupBody)
-			player2		= createPlayer(playerSpawn2.x, playerSpawn2.y,
+			player1		= createPlayer(playerSpawn.x + 100, playerSpawn.y,
+				groupBody)
+			player2		= createPlayer(playerSpawn.x, playerSpawn.y,
 				groupBody2)
+			# player2		= createPlayer(playerSpawn2.x, playerSpawn2.y,
+				# groupBody2)
 
 			# input
 			keyboard	= game.input.keyboard
@@ -274,6 +281,16 @@ require ["lib/phaser.min"], ->
 			groupBody.x		= player1.legs.body.x + player1.legs.body.width / 2
 			groupBody.y		= player1.legs.body.y +
 				player1.legs.body.height / 2
+
+			player1.healthDisplay.x	= player1.legs.body.center.x
+			player1.healthDisplay.y	= player1.legs.body.y
+
+			player1.healthDisplay.text	= player1.legs.health.toString()
+
+			player2.healthDisplay.x	= player2.legs.body.center.x
+			player2.healthDisplay.y	= player2.legs.body.y
+
+			player2.healthDisplay.text	= player2.legs.health.toString()
 
 			groupBody2.x	= player2.legs.body.center.x
 			groupBody2.y	= player2.legs.body.center.y
@@ -382,8 +399,12 @@ require ["lib/phaser.min"], ->
 
 			game.physics.arcade.overlap(groupLegs, groupProj
 				(legs, proj)->
+					legs.health	-= 10
+
 					detonateProj(proj)
-					detonatePlayer(legs, legs.bodyGroup)
+
+					if legs.health <= 0
+						detonatePlayer(legs, legs.bodyGroup)
 			)
 
 			game.physics.arcade.overlap(groupLegs, groupTeleport,
