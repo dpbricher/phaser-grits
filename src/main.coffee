@@ -19,8 +19,11 @@ require ["lib/phaser.min"], ->
 	groupHole		= null
 	groupSpawn		= null
 	groupTeleport	= null
+	# player legs
+	groupLegs		= null
 	# player body visual elements
 	groupBody		= null
+	groupBody2		= null
 	# group for visual effects that have no physics
 	groupVisual		= null
 
@@ -31,8 +34,11 @@ require ["lib/phaser.min"], ->
 	playerArmLeft 	= null
 	playerArmRight 	= null
 
+	player2			= null
+
 	# Phaser.Point player spawn location
 	playerSpawn		= null
+	playerSpawn2	= null
 
 	moveKeys		= null
 	cursors			= null
@@ -56,6 +62,7 @@ require ["lib/phaser.min"], ->
 			game.load.audio("energy", "sounds/energy_pickup.ogg", true)
 			game.load.audio("item", "sounds/item_pickup0.ogg", true)
 			game.load.audio("quad", "sounds/quad_pickup.ogg", true)
+			game.load.audio("explode", "sounds/explode0.ogg", true)
 
 		create:->
 			# physics system
@@ -102,6 +109,10 @@ require ["lib/phaser.min"], ->
 			groupHole		= game.add.group()
 			groupSpawn		= game.add.group()
 			groupTeleport	= game.add.group()
+			groupLegs		= game.add.group()
+			groupBody		= game.add.group()
+			groupBody2		= game.add.group()
+			groupVisual		= game.add.group()
 
 			# create sprites with null images for each collision area
 			for obj in tileMap.objects.collision
@@ -154,6 +165,10 @@ require ["lib/phaser.min"], ->
 						playerSpawn	= new Phaser.Point(obj.x + obj.width / 2,
 							obj.y + obj.height / 2)
 
+					when "Team1Spawn0"
+						playerSpawn2	= new Phaser.Point(
+							obj.x + obj.width / 2, obj.y + obj.height / 2)
+
 					when "TP"
 						teleporter	= groupTeleport.create(obj.x, obj.y,
 							"anims")
@@ -174,7 +189,7 @@ require ["lib/phaser.min"], ->
 						teleporter.destY	= parseFloat(teleDest[2] || 0);
 
 			# sprite sheet image
-			player		= game.add.sprite(playerSpawn.x, playerSpawn.y,
+			player		= groupLegs.create(playerSpawn.x + 100, playerSpawn.y,
 				"anims")
 			player.anchor.set(0.5, 0.5)
 
@@ -187,14 +202,13 @@ require ["lib/phaser.min"], ->
 			.play("walk_anim")
 			.stop()
 
+			player.bodyGroup	= groupBody
+
 			game.physics.arcade.enable(player)
 
-			player.body.collideWorldBounds	= true
+			# player.body.collideWorldBounds	= true
 			# shrink player physical dimensions
 			player.body.setSize(player.body.width / 2, player.body.height / 2)
-
-			groupBody		= game.add.group()
-			groupVisual		= game.add.group()
 
 			playerBody		= groupBody.create(0, 0, "anims")
 			playerBody.anchor.set(0.5, 0.5)
@@ -218,6 +232,47 @@ require ["lib/phaser.min"], ->
 			playerArmRight.animations.play("machinegun")
 
 			lastFireTime	= game.time.totalElapsedSeconds()
+
+			# player 2
+			player2			=
+				legs:groupLegs.create(playerSpawn.x, playerSpawn.y, "anims")
+				body:groupBody2.create(0, 0, "anims")
+				armLeft:groupBody2.create(0, 0, "anims")
+				armRight:groupBody2.create(0, 0, "anims")
+				lastFireTime:game.time.totalElapsedSeconds()
+
+			for key, sprite of player2
+				if typeof(sprite) is "object"
+					sprite.anchor?.set?(0.5, 0.5)
+
+			# player2.legs.anchor.set(0.5, 0.5)
+			player2.legs.animations.add("walk_anim",
+				# file name prefix, start num, end num, postfix, num padding
+				Phaser.Animation.generateFrameNames("walk_left_", 0, 29,
+					".png", 4), 25, true)
+			# player2.animations
+			player2.legs
+			.play("walk_anim")
+			.stop()
+
+			player2.legs.bodyGroup	= groupBody2
+
+			game.physics.arcade.enable(player2.legs)
+
+			player2.legs.body.setSize(player2.legs.body.width / 2,
+				player2.legs.body.height / 2)
+
+			player2.body.animations.add("turret", ["turret.png"], 25, true)
+			player2.body.play("turret")
+
+			player2.armLeft.animations.add("machinegun", ["machinegun.png"],
+				25, true)
+			player2.armLeft.play("machinegun")
+
+			player2.armRight.animations.add("machinegun", ["machinegun.png"],
+				25, true)
+			player2.armRight.play("machinegun")
+			player2.armRight.scale.set(1.0, -1.0)
 
 			# input
 			keyboard	= game.input.keyboard
@@ -267,6 +322,9 @@ require ["lib/phaser.min"], ->
 			groupBody.x		= bodyCentreX
 			groupBody.y		= bodyCentreY
 
+			groupBody2.x	= player2.legs.body.center.x
+			groupBody2.y	= player2.legs.body.center.y
+
 			# fire projectiles
 			velocity	= new Phaser.Point()
 
@@ -300,12 +358,18 @@ require ["lib/phaser.min"], ->
 				bullet.body.setSize(10, 10)
 
 				velocity.normalize()
+				offset				= velocity.clone()
 
 				groupBody.rotation	=
 				bullet.rotation		= velocity.angle(new Phaser.Point())
 
 				bullet.body.velocity	= velocity
 				.multiply(PROJECTILE_SPEED, PROJECTILE_SPEED)
+
+				offset.multiply(player.body.width, player.body.width)
+
+				bullet.body.x		+= offset.x
+				bullet.body.y		+= offset.y
 
 				# left and right weapon muzzle animations
 				for i in [0, 1]
@@ -325,8 +389,48 @@ require ["lib/phaser.min"], ->
 				lastFireTime			= game.time.totalElapsedSeconds()
 
 			# collision
+			detonateProj	= (proj)->
+				proj.kill()
+
+				# create bullet death anim
+				anim	= groupVisual.create(proj.x, proj.y, "anims")
+				anim.anchor.set(0.5, 0.5)
+
+				anim.animations.add("impact",
+					Phaser.Animation.generateFrameNames("machinegun_impact_",
+						0, 7, ".png", 4), 25, true)
+				anim.play("impact", null, false, true)
+
+			detonatePlayer	= (legs, bodyGroup)->
+				legs.kill()
+				bodyGroup.forEach(
+					(sprite)->
+						sprite.kill()
+					@
+				)
+
+				anim	= groupVisual.create(legs.body.center.x,
+					legs.body.center.y, "anims")
+				anim.anchor.set(0.5, 0.5)
+
+				anim.animations.add("death",
+					Phaser.Animation.generateFrameNames(
+						"landmine_explosion_large_", 0, 29, ".png", 4), 25,
+					true)
+				anim.play("death", null, false, true)
+
+				game.add
+				.audio("explode")
+				.play()
+
 			game.physics.arcade.collide(player, groupWall)
 			game.physics.arcade.collide(player, groupHole)
+
+			game.physics.arcade.overlap(groupLegs, groupProj
+				(legs, proj)->
+					detonateProj(proj)
+					detonatePlayer(legs, legs.bodyGroup)
+			)
 
 			game.physics.arcade.overlap(player, groupTeleport,
 				(p, t)->
@@ -352,19 +456,7 @@ require ["lib/phaser.min"], ->
 					groupProj.forEachAlive(
 						(proj)->
 							if wall.body.hitTest(proj.x, proj.y)
-								proj.kill()
-
-								# create bullet death anim
-								anim	= groupVisual.create(proj.x, proj.y
-									"anims")
-								anim.anchor.set(0.5, 0.5)
-
-								anim.animations.add("impact",
-									Phaser.Animation.generateFrameNames(
-										"machinegun_impact_", 0, 7, ".png", 4),
-									25, true
-								)
-								anim.play("impact", null, false, true)
+								detonateProj(proj)
 					)
 			)
 
@@ -377,6 +469,7 @@ require ["lib/phaser.min"], ->
 
 		render:->
 			game.debug.body(player, "rgba(0, 255, 255, 0.4)")
+			game.debug.body(player2.legs, "rgba(0, 255, 255, 0.4)")
 
 			groupProj.forEach(
 				(proj)->
