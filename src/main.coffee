@@ -27,13 +27,7 @@ require ["lib/phaser.min"], ->
 	# group for visual effects that have no physics
 	groupVisual		= null
 
-	player			= null
-	lastFireTime	= 0
-
-	playerBody	 	= null
-	playerArmLeft 	= null
-	playerArmRight 	= null
-
+	player1			= null
 	player2			= null
 
 	# Phaser.Point player spawn location
@@ -188,91 +182,52 @@ require ["lib/phaser.min"], ->
 						teleporter.destX	= parseFloat(teleDest[1] || 0);
 						teleporter.destY	= parseFloat(teleDest[2] || 0);
 
-			# sprite sheet image
-			player		= groupLegs.create(playerSpawn.x + 100, playerSpawn.y,
-				"anims")
-			player.anchor.set(0.5, 0.5)
+			# players
+			createPlayer	= (x, y, bodyGroup)->
+				player			=
+					legs:groupLegs.create(x, y, "anims")
+					body:bodyGroup.create(0, 0, "anims")
+					armLeft:bodyGroup.create(0, 0, "anims")
+					armRight:bodyGroup.create(0, 0, "anims")
+					lastFireTime:game.time.totalElapsedSeconds()
 
-			# new id, array of frames, framerate, loop
-			player.animations.add("walk_anim",
-				# file name prefix, start num, end num, postfix, num padding
-				Phaser.Animation.generateFrameNames("walk_left_", 0, 29,
-					".png", 4), 25, true)
-			player.animations
-			.play("walk_anim")
-			.stop()
+				for key, sprite of player
+					if typeof(sprite) is "object"
+						sprite.anchor?.set?(0.5, 0.5)
 
-			player.bodyGroup	= groupBody
+				player.legs.animations.add("walk_anim",
+					# file name prefix, start num, end num, postfix, num padding
+					Phaser.Animation.generateFrameNames("walk_left_", 0, 29,
+						".png", 4), 25, true)
+				# player2.animations
+				player.legs
+				.play("walk_anim")
+				.stop()
 
-			game.physics.arcade.enable(player)
+				player.legs.bodyGroup	= bodyGroup
 
-			# player.body.collideWorldBounds	= true
-			# shrink player physical dimensions
-			player.body.setSize(player.body.width / 2, player.body.height / 2)
+				game.physics.arcade.enable(player.legs)
 
-			playerBody		= groupBody.create(0, 0, "anims")
-			playerBody.anchor.set(0.5, 0.5)
+				player.legs.body.setSize(player.legs.body.width / 2,
+					player.legs.body.height / 2)
 
-			playerBody.animations.add("turret", ["turret.png"], 25, true)
-			playerBody.animations.play("turret")
+				player.body.animations.add("turret", ["turret.png"], 25, true)
+				player.body.play("turret")
 
-			playerArmLeft	= groupBody.create(0, 0, "anims")
-			playerArmLeft.anchor.set(0.5, 0.5)
+				player.armLeft.animations.add("machinegun", ["machinegun.png"],
+					25, true)
+				player.armLeft.play("machinegun")
 
-			playerArmLeft.animations.add("machinegun", ["machinegun.png"], 25,
-				true)
-			playerArmLeft.animations.play("machinegun")
+				player.armRight.animations.add("machinegun", ["machinegun.png"],
+					25, true)
+				player.armRight.play("machinegun")
+				player.armRight.scale.set(1.0, -1.0)
 
-			playerArmRight	= groupBody.create(0, 0, "anims")
-			playerArmRight.anchor.set(0.5, 0.5)
-			playerArmRight.scale.set(1.0, -1.0)
+				return player
 
-			playerArmRight.animations.add("machinegun", ["machinegun.png"], 25,
-				true)
-			playerArmRight.animations.play("machinegun")
-
-			lastFireTime	= game.time.totalElapsedSeconds()
-
-			# player 2
-			player2			=
-				legs:groupLegs.create(playerSpawn.x, playerSpawn.y, "anims")
-				body:groupBody2.create(0, 0, "anims")
-				armLeft:groupBody2.create(0, 0, "anims")
-				armRight:groupBody2.create(0, 0, "anims")
-				lastFireTime:game.time.totalElapsedSeconds()
-
-			for key, sprite of player2
-				if typeof(sprite) is "object"
-					sprite.anchor?.set?(0.5, 0.5)
-
-			# player2.legs.anchor.set(0.5, 0.5)
-			player2.legs.animations.add("walk_anim",
-				# file name prefix, start num, end num, postfix, num padding
-				Phaser.Animation.generateFrameNames("walk_left_", 0, 29,
-					".png", 4), 25, true)
-			# player2.animations
-			player2.legs
-			.play("walk_anim")
-			.stop()
-
-			player2.legs.bodyGroup	= groupBody2
-
-			game.physics.arcade.enable(player2.legs)
-
-			player2.legs.body.setSize(player2.legs.body.width / 2,
-				player2.legs.body.height / 2)
-
-			player2.body.animations.add("turret", ["turret.png"], 25, true)
-			player2.body.play("turret")
-
-			player2.armLeft.animations.add("machinegun", ["machinegun.png"],
-				25, true)
-			player2.armLeft.play("machinegun")
-
-			player2.armRight.animations.add("machinegun", ["machinegun.png"],
-				25, true)
-			player2.armRight.play("machinegun")
-			player2.armRight.scale.set(1.0, -1.0)
+			player1		= createPlayer(playerSpawn.x, playerSpawn.y, groupBody)
+			player2		= createPlayer(playerSpawn2.x, playerSpawn2.y,
+				groupBody2)
 
 			# input
 			keyboard	= game.input.keyboard
@@ -288,11 +243,11 @@ require ["lib/phaser.min"], ->
 				right:keyboard.addKey(Phaser.Keyboard.D)
 
 			# camera
-			game.camera.follow(player)
+			game.camera.follow(player1.legs)
 
 		update:->
 			# movement
-			velocity	= player.body.velocity.set(0, 0)
+			velocity	= player1.legs.body.velocity.set(0, 0)
 
 			if moveKeys.right.isDown
 				velocity.x	+= 1
@@ -312,15 +267,13 @@ require ["lib/phaser.min"], ->
 
 			# if player is moving then advance walk animation
 			if !velocity.isZero()
-				player.rotation	= velocity.angle(new Phaser.Point())
-				player.animations.next(1)
-
-			bodyCentreX		= player.body.x + player.body.width / 2
-			bodyCentreY		= player.body.y + player.body.height / 2
+				player1.legs.rotation	= velocity.angle(new Phaser.Point())
+				player1.legs.animations.next(1)
 
 			# player body and arms
-			groupBody.x		= bodyCentreX
-			groupBody.y		= bodyCentreY
+			groupBody.x		= player1.legs.body.x + player1.legs.body.width / 2
+			groupBody.y		= player1.legs.body.y +
+				player1.legs.body.height / 2
 
 			groupBody2.x	= player2.legs.body.center.x
 			groupBody2.y	= player2.legs.body.center.y
@@ -341,10 +294,10 @@ require ["lib/phaser.min"], ->
 				velocity.y	+= 1
 
 			if !velocity.isZero() and
-			game.time.totalElapsedSeconds() - lastFireTime >= RELOAD_TIME
-				bullet	= groupProj.create(
-					player.body.position.x + player.body.width / 2,
-					player.body.position.y + player.body.height / 2, "anims")
+			game.time.totalElapsedSeconds() - player1.lastFireTime >=
+			RELOAD_TIME
+				bullet	= groupProj.create(player1.legs.body.center.x,
+					player1.legs.body.center.y, "anims")
 				bullet.anchor.set(0.5, 0.5)
 
 				bullet.animations.add("bullet",
@@ -366,7 +319,8 @@ require ["lib/phaser.min"], ->
 				bullet.body.velocity	= velocity
 				.multiply(PROJECTILE_SPEED, PROJECTILE_SPEED)
 
-				offset.multiply(player.body.width, player.body.width)
+				offset.multiply(player1.legs.body.width,
+					player1.legs.body.width)
 
 				bullet.body.x		+= offset.x
 				bullet.body.y		+= offset.y
@@ -386,7 +340,7 @@ require ["lib/phaser.min"], ->
 
 				sfx.fire.play()
 
-				lastFireTime			= game.time.totalElapsedSeconds()
+				player1.lastFireTime	= game.time.totalElapsedSeconds()
 
 			# collision
 			detonateProj	= (proj)->
@@ -423,8 +377,8 @@ require ["lib/phaser.min"], ->
 				.audio("explode")
 				.play()
 
-			game.physics.arcade.collide(player, groupWall)
-			game.physics.arcade.collide(player, groupHole)
+			game.physics.arcade.collide(player1.legs, groupWall)
+			game.physics.arcade.collide(player1.legs, groupHole)
 
 			game.physics.arcade.overlap(groupLegs, groupProj
 				(legs, proj)->
@@ -432,14 +386,14 @@ require ["lib/phaser.min"], ->
 					detonatePlayer(legs, legs.bodyGroup)
 			)
 
-			game.physics.arcade.overlap(player, groupTeleport,
+			game.physics.arcade.overlap(groupLegs, groupTeleport,
 				(p, t)->
-					player.body.x	= game.world.width * (t.destX / 100)
-					player.body.y	= game.world.height * (t.destY / 100)
+					p.body.x	= game.world.width * (t.destX / 100)
+					p.body.y	= game.world.height * (t.destY / 100)
 					sfx.bounce.play()
 			)
 
-			game.physics.arcade.overlap(player, groupSpawn,
+			game.physics.arcade.overlap(groupLegs, groupSpawn,
 				(p, s)->
 					if s.visible
 						s.visible			= false
@@ -468,7 +422,7 @@ require ["lib/phaser.min"], ->
 			)
 
 		render:->
-			game.debug.body(player, "rgba(0, 255, 255, 0.4)")
+			game.debug.body(player1.legs, "rgba(0, 255, 255, 0.4)")
 			game.debug.body(player2.legs, "rgba(0, 255, 255, 0.4)")
 
 			groupProj.forEach(
