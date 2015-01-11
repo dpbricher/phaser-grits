@@ -1,15 +1,16 @@
 # Phaser Grits
 
-(Attemped) grits clone using phaser.
+(Attemped) grits clone (in a very loose sense) using phaser.
 
 ### Prerequisites
 
 - bash
 - coffee script
+- HTML5 compliant web browser
 
 ### Build
 
-Run compile.sh to concat .coffee files in src/ and compile them to bin/src.min.js.
+Run compile.sh to concat .coffee files in src/ and compile them to bin/
 
 ### Run
 
