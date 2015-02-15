@@ -15,6 +15,8 @@ define ["lib/phaser.min"], ->
 
 		# groups
 		groupProj		= null
+		# group for newly created projectiles, hack for a collision issue
+		groupNewProj	= null
 		groupWall		= null
 		# group for player but not proj collision objects
 		groupHole		= null
@@ -104,6 +106,7 @@ define ["lib/phaser.min"], ->
 
 			# create groups
 			groupProj		= game.add.group()
+			groupNewProj	= game.add.group()
 			groupWall		= game.add.group()
 			groupHole		= game.add.group()
 			groupSpawn		= game.add.group()
@@ -317,7 +320,7 @@ define ["lib/phaser.min"], ->
 			if !velocity.isZero() and
 			game.time.totalElapsedSeconds() - player1.lastFireTime >=
 			RELOAD_TIME
-				bullet	= groupProj.create(player1.legs.body.center.x,
+				bullet	= groupNewProj.create(player1.legs.body.center.x,
 					player1.legs.body.center.y, "anims")
 				bullet.anchor.set(0.5, 0.5)
 
@@ -345,6 +348,7 @@ define ["lib/phaser.min"], ->
 
 				bullet.body.x		+= offset.x
 				bullet.body.y		+= offset.y
+				bullet.brandNew	= true
 
 				# left and right weapon muzzle animations
 				for i in [0, 1]
@@ -401,7 +405,7 @@ define ["lib/phaser.min"], ->
 			game.physics.arcade.collide(player1.legs, groupWall)
 			game.physics.arcade.collide(player1.legs, groupHole)
 
-			game.physics.arcade.overlap(groupLegs, groupProj
+			game.physics.arcade.overlap(groupLegs, groupProj,
 				(legs, proj)->
 					legs.health	-= 10
 
@@ -409,6 +413,13 @@ define ["lib/phaser.min"], ->
 
 					if legs.health <= 0
 						detonatePlayer(legs, legs.bodyGroup)
+			)
+
+			groupNewProj.forEach(
+				(proj)->
+					groupProj.add(
+						groupNewProj.removeChild(proj)
+					)
 			)
 
 			game.physics.arcade.overlap(groupLegs, groupTeleport,
