@@ -16,7 +16,6 @@ define ["lib/phaser.min"], ->
 		# groups
 		groupProj		= null
 		# group for newly created projectiles, hack for a collision issue
-		groupNewProj	= null
 		groupWall		= null
 		# group for player but not proj collision objects
 		groupHole		= null
@@ -106,7 +105,6 @@ define ["lib/phaser.min"], ->
 
 			# create groups
 			groupProj		= game.add.group()
-			groupNewProj	= game.add.group()
 			groupWall		= game.add.group()
 			groupHole		= game.add.group()
 			groupSpawn		= game.add.group()
@@ -260,6 +258,89 @@ define ["lib/phaser.min"], ->
 			game.camera.follow(player1.legs)
 
 		update:->
+			# collision
+			game.physics.arcade.collide(player1.legs, groupWall)
+			game.physics.arcade.collide(player1.legs, groupHole)
+
+			detonateProj	= (proj)->
+				proj.kill()
+
+				# create bullet death anim
+				anim	= groupVisual.create(proj.x, proj.y, "anims")
+				anim.anchor.set(0.5, 0.5)
+
+				anim.animations.add("impact",
+					Phaser.Animation.generateFrameNames("machinegun_impact_",
+						0, 7, ".png", 4), 25, true)
+				anim.play("impact", null, false, true)
+
+			detonatePlayer	= (legs, bodyGroup)->
+				legs.kill()
+				bodyGroup.forEach(
+					(sprite)->
+						sprite.kill()
+					@
+				)
+
+				anim	= groupVisual.create(legs.body.center.x,
+					legs.body.center.y, "anims")
+				anim.anchor.set(0.5, 0.5)
+
+				anim.animations.add("death",
+					Phaser.Animation.generateFrameNames(
+						"landmine_explosion_large_", 0, 29, ".png", 4), 25,
+					true)
+				anim.play("death", null, false, true)
+
+				game.add
+				.audio("explode")
+				.play()
+
+			game.physics.arcade.overlap(groupLegs, groupProj,
+				(legs, proj)->
+					legs.health	-= 10
+
+					detonateProj(proj)
+
+					if legs.health <= 0
+						detonatePlayer(legs, legs.bodyGroup)
+			)
+
+			game.physics.arcade.overlap(groupLegs, groupTeleport,
+				(p, t)->
+					p.body.x	= game.world.width * (t.destX / 100)
+					p.body.y	= game.world.height * (t.destY / 100)
+					sfx.bounce.play()
+			)
+
+			game.physics.arcade.overlap(groupLegs, groupSpawn,
+				(p, s)->
+					if s.visible
+						s.visible			= false
+						s.lastCollectTime	= game.time.totalElapsedSeconds()
+						s.audio.play()
+			)
+
+			now		= game.time.totalElapsedSeconds()
+
+			# bullet collision here; group on group collision doesn't seem to
+			# work
+			groupWall.forEach(
+				(wall)->
+					groupProj.forEachAlive(
+						(proj)->
+							if wall.body.hitTest(proj.x, proj.y)
+								detonateProj(proj)
+					)
+			)
+
+			# spawn item generation
+			groupSpawn.forEach(
+				(s)->
+					if now >= s.lastCollectTime + 3.0
+						s.visible	= true
+			)
+
 			# movement
 			velocity	= player1.legs.body.velocity.set(0, 0)
 
@@ -320,7 +401,7 @@ define ["lib/phaser.min"], ->
 			if !velocity.isZero() and
 			game.time.totalElapsedSeconds() - player1.lastFireTime >=
 			RELOAD_TIME
-				bullet	= groupNewProj.create(player1.legs.body.center.x,
+				bullet	= groupProj.create(player1.legs.body.center.x,
 					player1.legs.body.center.y, "anims")
 				bullet.anchor.set(0.5, 0.5)
 
@@ -366,96 +447,6 @@ define ["lib/phaser.min"], ->
 				sfx.fire.play()
 
 				player1.lastFireTime	= game.time.totalElapsedSeconds()
-
-			# collision
-			detonateProj	= (proj)->
-				proj.kill()
-
-				# create bullet death anim
-				anim	= groupVisual.create(proj.x, proj.y, "anims")
-				anim.anchor.set(0.5, 0.5)
-
-				anim.animations.add("impact",
-					Phaser.Animation.generateFrameNames("machinegun_impact_",
-						0, 7, ".png", 4), 25, true)
-				anim.play("impact", null, false, true)
-
-			detonatePlayer	= (legs, bodyGroup)->
-				legs.kill()
-				bodyGroup.forEach(
-					(sprite)->
-						sprite.kill()
-					@
-				)
-
-				anim	= groupVisual.create(legs.body.center.x,
-					legs.body.center.y, "anims")
-				anim.anchor.set(0.5, 0.5)
-
-				anim.animations.add("death",
-					Phaser.Animation.generateFrameNames(
-						"landmine_explosion_large_", 0, 29, ".png", 4), 25,
-					true)
-				anim.play("death", null, false, true)
-
-				game.add
-				.audio("explode")
-				.play()
-
-			game.physics.arcade.collide(player1.legs, groupWall)
-			game.physics.arcade.collide(player1.legs, groupHole)
-
-			game.physics.arcade.overlap(groupLegs, groupProj,
-				(legs, proj)->
-					legs.health	-= 10
-
-					detonateProj(proj)
-
-					if legs.health <= 0
-						detonatePlayer(legs, legs.bodyGroup)
-			)
-
-			groupNewProj.forEach(
-				(proj)->
-					groupProj.add(
-						groupNewProj.removeChild(proj)
-					)
-			)
-
-			game.physics.arcade.overlap(groupLegs, groupTeleport,
-				(p, t)->
-					p.body.x	= game.world.width * (t.destX / 100)
-					p.body.y	= game.world.height * (t.destY / 100)
-					sfx.bounce.play()
-			)
-
-			game.physics.arcade.overlap(groupLegs, groupSpawn,
-				(p, s)->
-					if s.visible
-						s.visible			= false
-						s.lastCollectTime	= game.time.totalElapsedSeconds()
-						s.audio.play()
-			)
-
-			now		= game.time.totalElapsedSeconds()
-
-			# bullet collision here; group on group collision doesn't seem to
-			# work
-			groupWall.forEach(
-				(wall)->
-					groupProj.forEachAlive(
-						(proj)->
-							if wall.body.hitTest(proj.x, proj.y)
-								detonateProj(proj)
-					)
-			)
-
-			# spawn item generation
-			groupSpawn.forEach(
-				(s)->
-					if now >= s.lastCollectTime + 3.0
-						s.visible	= true
-			)
 
 		render:->
 			# game.debug.body(player1.legs, "rgba(0, 255, 255, 0.4)")
