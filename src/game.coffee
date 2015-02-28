@@ -297,7 +297,7 @@ define ["phaser"],
 					.audio("explode")
 					.play()
 
-				game.physics.arcade.overlap(groupLegs, groupProj,
+				game.physics.arcade.overlap(player2.legs, groupProj,
 					(legs, proj)->
 						legs.health	-= 10
 
@@ -324,8 +324,8 @@ define ["phaser"],
 
 				now		= game.time.totalElapsedSeconds()
 
-				# bullet collision here; group on group collision doesn't seem to
-				# work
+				# bullet collision here; group on group collision won't catch
+				# those spawned inside a wall (e.g. due to offset)
 				groupWall.forEach(
 					(wall)->
 						groupProj.forEachAlive(
@@ -402,35 +402,41 @@ define ["phaser"],
 				if !velocity.isZero() and
 				game.time.totalElapsedSeconds() - player1.lastFireTime >=
 				RELOAD_TIME
-					bullet	= groupProj.create(player1.legs.body.center.x,
-						player1.legs.body.center.y, "anims")
-					bullet.anchor.set(0.5, 0.5)
-
-					bullet.animations.add("bullet",
-						Phaser.Animation.generateFrameNames(
-							"machinegun_projectile_", 0, 7, ".png", 4),
-						25, true)
-					bullet.animations.play("bullet")
-
-					game.physics.arcade.enable(bullet)
-
-					bullet.body.setSize(10, 10)
-
 					velocity.normalize()
-					offset				= velocity.clone()
 
-					groupBody.rotation	=
-					bullet.rotation		= velocity.angle(new Phaser.Point())
+					# set body rotation to match firing angle
+					groupBody.rotation	= velocity.angle(new Phaser.Point())
 
-					bullet.body.velocity	= velocity
-					.multiply(PROJECTILE_SPEED, PROJECTILE_SPEED)
+					# left and right projectiles
+					for i in [-1, 1]
+						bullet	= groupProj.create(player1.legs.body.center.x,
+							player1.legs.body.center.y, "anims")
+						bullet.anchor.set(0.5, 0.5)
 
-					offset.multiply(player1.legs.body.width,
-						player1.legs.body.width)
+						bullet.animations.add("bullet",
+							Phaser.Animation.generateFrameNames(
+								"machinegun_projectile_", 0, 7, ".png", 4),
+							25, true)
+						bullet.animations.play("bullet")
 
-					bullet.body.x		+= offset.x
-					bullet.body.y		+= offset.y
-					bullet.brandNew	= true
+						game.physics.arcade.enable(bullet)
+
+						bullet.body.setSize(10, 10)
+
+						# add position offset
+						bullet.body.position
+						# position at player weapon muzzle
+						.add(-player1.legs.body.width * 0.5,
+							player1.legs.body.height * 0.25 * i)
+						# rotate around player body to match body rotation
+						.rotate(player1.legs.body.center.x,
+							player1.legs.body.center.y, groupBody.rotation)
+
+						bullet.rotation			= groupBody.rotation
+
+						bullet.body.velocity	= velocity
+						.clone()
+						.multiply(PROJECTILE_SPEED, PROJECTILE_SPEED)
 
 					# left and right weapon muzzle animations
 					for i in [0, 1]
