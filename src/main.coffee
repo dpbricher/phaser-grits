@@ -1,7 +1,15 @@
-require ["preload", "game", "lib/phaser.min"], (sp, sg)->
-	game	= new Phaser.Game(800, 600, Phaser.AUTO, "content-main")
+requirejs.config
+	paths:
+		"phaser":"lib/phaser.min"
+	shim:
+		"phaser":
+			exports:"Phaser"
 
-	game.state.add("Game", sg.Game)
-	game.state.add("Preload", sp.Preload)
+require ["preload", "game", "phaser"],
+	(Preload, Game, Phaser)->
+		game	= new Phaser.Game(800, 600, Phaser.AUTO, "content-main")
 
-	game.state.start("Preload")
+		game.state.add("Game", Game)
+		game.state.add("Preload", Preload)
+
+		game.state.start("Preload")

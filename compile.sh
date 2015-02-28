@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-coffee -bc -o bin/js/ src/
+coffee -co bin/js/ src/
