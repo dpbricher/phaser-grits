@@ -1,5 +1,5 @@
-define ["phaser", "player"],
-	(Phaser, Player)->
+define ["phaser", "player", "projectile"],
+	(Phaser, Player, Projectile)->
 		class Game extends Phaser.State
 			PLAYER_SPEED		= 500
 			PROJECTILE_SPEED	= 1000
@@ -258,14 +258,15 @@ define ["phaser", "player"],
 					.audio("explode")
 					.play()
 
-				game.physics.arcade.overlap(player2, groupProj,
+				game.physics.arcade.overlap(groupPlayer, groupProj,
 					(player, proj)->
-						player.health	-= 10
+						if proj.getOwner() != player
+							detonateProj(proj)
 
-						detonateProj(proj)
+							player.health	-= proj.getDamage()
 
-						if player.health <= 0
-							detonatePlayer(player, player.bodyGroup)
+							if player.health <= 0
+								detonatePlayer(player, player.bodyGroup)
 				)
 
 				game.physics.arcade.overlap(groupPlayer, groupTeleport,
@@ -358,19 +359,9 @@ define ["phaser", "player"],
 
 					# left and right projectiles
 					for i in [-1, 1]
-						bullet	= groupProj.create(player1.body.center.x,
-							player1.body.center.y, "anims")
-						bullet.anchor.set(0.5, 0.5)
-
-						bullet.animations.add("bullet",
-							Phaser.Animation.generateFrameNames(
-								"machinegun_projectile_", 0, 7, ".png", 4),
-							25, true)
-						bullet.animations.play("bullet")
-
-						game.physics.arcade.enable(bullet)
-
-						bullet.body.setSize(10, 10)
+						bullet	= new Projectile(game, player1.body.center.x,
+							player1.body.center.y, player1, 5)
+						groupProj.add(bullet)
 
 						# add position offset
 						bullet.body.position
