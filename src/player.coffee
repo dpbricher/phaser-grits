@@ -22,7 +22,9 @@ define ["phaser"],
 				@_muzzleRight	= new Phaser.Point(-@body.width * 0.5,
 					@body.height * 0.25)
 
+				@_maxHealth		=
 				@health			= 100
+
 				@lastFireTime	= game.time.totalElapsedSeconds()
 
 				@healthDisplay	= game.add.text(0, 0, "")
@@ -48,11 +50,16 @@ define ["phaser"],
 			getMuzzleRight:->
 				@_getTransformedMuzzle(@_muzzleRight)
 
+			gainHealth:(amount)->
+				@health	= Math.min(@health + amount, @_maxHealth)
+
+			loseHealth:(amount)->
+				@health	= Math.max(@health - amount, 0)
+
 			update:->
 				@bodyGroup.x		= @body.x + @body.width / 2
 				@bodyGroup.y		= @body.y + @body.height / 2
 
-				# @healthDisplay.x	= @body.center.x
 				@healthDisplay.x	= @body.x
 				@healthDisplay.y	= @body.y
 

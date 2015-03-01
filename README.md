@@ -1,6 +1,7 @@
 # Phaser Grits
 
-(Attemped) grits clone (in a very loose sense) using phaser.
+(Attemped) grits clone (in a very loose sense) using
+[Phaser](http://phaser.io/)
 
 ### Prerequisites
 
@@ -10,7 +11,9 @@
 
 ### Build
 
-Run compile.sh to concat .coffee files in src/ and compile them to bin/
+Run compile.sh to compile .coffee files in src/ to bin/js/
+Run watch.sh to wait for changes to .coffee files in src/ and compile them to
+bin/js/ when detected (also compiles all files when started)
 
 ### Run
 

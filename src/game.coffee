@@ -143,7 +143,7 @@ define ["phaser", "player", "projectile", "spawn_item"],
 							createCanister(obj, "canister_health",
 								"energy_canister_red_", sfx.item,
 								(player)->
-									player.health	+= 20
+									player.gainHealth(20)
 							)
 
 						when "EnergySpawner"
@@ -255,7 +255,7 @@ define ["phaser", "player", "projectile", "spawn_item"],
 						if proj.getOwner() != player
 							detonateProj(proj)
 
-							player.health	-= proj.getDamage()
+							player.loseHealth(proj.getDamage())
 
 							if player.health <= 0
 								detonatePlayer(player, player.bodyGroup)
