@@ -1,5 +1,5 @@
-define ["phaser"],
-	(Phaser)->
+define ["phaser", "player"],
+	(Phaser, Player)->
 		class Game extends Phaser.State
 			PLAYER_SPEED		= 500
 			PROJECTILE_SPEED	= 1000
@@ -23,10 +23,9 @@ define ["phaser"],
 			groupSpawn		= null
 			groupTeleport	= null
 			# player legs
-			groupLegs		= null
+			groupPlayer		= null
 			# player body visual elements
 			groupBody		= null
-			groupBody2		= null
 			# group for visual effects that have no physics
 			groupVisual		= null
 			groupText		= null
@@ -110,9 +109,8 @@ define ["phaser"],
 				groupHole		= game.add.group()
 				groupSpawn		= game.add.group()
 				groupTeleport	= game.add.group()
-				groupLegs		= game.add.group()
+				groupPlayer		= game.add.group()
 				groupBody		= game.add.group()
-				groupBody2		= game.add.group()
 				groupVisual		= game.add.group()
 				groupText		= game.add.group()
 
@@ -138,8 +136,8 @@ define ["phaser"],
 					item.anchor.set(0.5, 0.5)
 
 					item.animations.add(animName,
-						Phaser.Animation.generateFrameNames(animFramePrefix, 0, 15,
-							".png", 4), 25, true)
+						Phaser.Animation.generateFrameNames(animFramePrefix, 0,
+							15, ".png", 4), 25, true)
 					item.animations.play(animName)
 
 					item.audio				= audio
@@ -161,11 +159,12 @@ define ["phaser"],
 								"energy_canister_blue_", sfx.energy)
 
 						when "QuadDamageSpawner"
-							createCanister("quad_damage", "quad_damage_", sfx.quad)
+							createCanister("quad_damage", "quad_damage_",
+								sfx.quad)
 
 						when "Team0Spawn0"
-							playerSpawn	= new Phaser.Point(obj.x + obj.width / 2,
-								obj.y + obj.height / 2)
+							playerSpawn	= new Phaser.Point(
+								obj.x + obj.width / 2, obj.y + obj.height / 2)
 
 						when "Team1Spawn0"
 							playerSpawn2	= new Phaser.Point(
@@ -191,54 +190,16 @@ define ["phaser"],
 							teleporter.destY	= parseFloat(teleDest[2] || 0);
 
 				# players
-				createPlayer	= (x, y, bodyGroup)->
-					player			=
-						legs:groupLegs.create(x, y, "anims")
-						body:bodyGroup.create(0, 0, "anims")
-						armLeft:bodyGroup.create(0, 0, "anims")
-						armRight:bodyGroup.create(0, 0, "anims")
-						lastFireTime:game.time.totalElapsedSeconds()
-						healthDisplay:game.add.text(x, y, "")
+				createPlayer	= (x, y)->
+					player	= new Player(game, x, y)
 
-					for key, sprite of player
-						if typeof(sprite) is "object"
-							sprite.anchor?.set?(0.5, 0.5)
+					groupPlayer.add(player)
+					groupBody.add(player.bodyGroup)
 
-					player.legs.animations.add("walk_anim",
-						# file name prefix, start num, end num, postfix, num padding
-						Phaser.Animation.generateFrameNames("walk_left_", 0, 29,
-							".png", 4), 25, true)
-					player.legs
-					.play("walk_anim")
-					.stop()
+					player
 
-					player.legs.health		= 100
-
-					player.legs.bodyGroup	= bodyGroup
-
-					game.physics.arcade.enable(player.legs)
-
-					player.legs.body.setSize(player.legs.body.width / 2,
-						player.legs.body.height / 2)
-
-					player.body.animations.add("turret", ["turret.png"], 25, true)
-					player.body.play("turret")
-
-					player.armLeft.animations.add("machinegun", ["machinegun.png"],
-						25, true)
-					player.armLeft.play("machinegun")
-
-					player.armRight.animations.add("machinegun", ["machinegun.png"],
-						25, true)
-					player.armRight.play("machinegun")
-					player.armRight.scale.set(1.0, -1.0)
-
-					return player
-
-				player1		= createPlayer(playerSpawn.x + 100, playerSpawn.y,
-					groupBody)
-				player2		= createPlayer(playerSpawn.x, playerSpawn.y,
-					groupBody2)
+				player1		= createPlayer(playerSpawn.x + 100, playerSpawn.y)
+				player2		= createPlayer(playerSpawn.x, playerSpawn.y)
 				# player2		= createPlayer(playerSpawn2.x, playerSpawn2.y,
 					# groupBody2)
 
@@ -256,12 +217,12 @@ define ["phaser"],
 					right:keyboard.addKey(Phaser.Keyboard.D)
 
 				# camera
-				game.camera.follow(player1.legs)
+				game.camera.follow(player1)
 
 			update:->
 				# collision
-				game.physics.arcade.collide(player1.legs, groupWall)
-				game.physics.arcade.collide(player1.legs, groupHole)
+				game.physics.arcade.collide(player1, groupWall)
+				game.physics.arcade.collide(player1, groupHole)
 
 				detonateProj	= (proj)->
 					proj.kill()
@@ -271,8 +232,8 @@ define ["phaser"],
 					anim.anchor.set(0.5, 0.5)
 
 					anim.animations.add("impact",
-						Phaser.Animation.generateFrameNames("machinegun_impact_",
-							0, 7, ".png", 4), 25, true)
+						Phaser.Animation.generateFrameNames(
+							"machinegun_impact_", 0, 7, ".png", 4), 25, true)
 					anim.play("impact", null, false, true)
 
 				detonatePlayer	= (legs, bodyGroup)->
@@ -297,28 +258,29 @@ define ["phaser"],
 					.audio("explode")
 					.play()
 
-				game.physics.arcade.overlap(player2.legs, groupProj,
-					(legs, proj)->
-						legs.health	-= 10
+				game.physics.arcade.overlap(player2, groupProj,
+					(player, proj)->
+						player.health	-= 10
 
 						detonateProj(proj)
 
-						if legs.health <= 0
-							detonatePlayer(legs, legs.bodyGroup)
+						if player.health <= 0
+							detonatePlayer(player, player.bodyGroup)
 				)
 
-				game.physics.arcade.overlap(groupLegs, groupTeleport,
+				game.physics.arcade.overlap(groupPlayer, groupTeleport,
 					(p, t)->
-						p.body.x	= game.world.width * (t.destX / 100)
-						p.body.y	= game.world.height * (t.destY / 100)
+						p.moveTo(game.world.width * (t.destX / 100),
+							game.world.height * (t.destY / 100))
 						sfx.bounce.play()
 				)
 
-				game.physics.arcade.overlap(groupLegs, groupSpawn,
+				game.physics.arcade.overlap(groupPlayer, groupSpawn,
 					(p, s)->
 						if s.visible
 							s.visible			= false
-							s.lastCollectTime	= game.time.totalElapsedSeconds()
+							s.lastCollectTime	=
+								game.time.totalElapsedSeconds()
 							s.audio.play()
 				)
 
@@ -343,7 +305,7 @@ define ["phaser"],
 				)
 
 				# movement
-				velocity	= player1.legs.body.velocity.set(0, 0)
+				velocity	= player1.body.velocity.set(0, 0)
 
 				if moveKeys.right.isDown
 					velocity.x	+= 1
@@ -363,26 +325,11 @@ define ["phaser"],
 
 				# if player is moving then advance walk animation
 				if !velocity.isZero()
-					player1.legs.rotation	= velocity.angle(new Phaser.Point())
-					player1.legs.animations.next(1)
+					player1.rotateLegs(velocity.angle(new Phaser.Point))
+					player1.animations.next(1)
 
-				# player body and arms
-				groupBody.x		= player1.legs.body.x + player1.legs.body.width / 2
-				groupBody.y		= player1.legs.body.y +
-					player1.legs.body.height / 2
-
-				player1.healthDisplay.x	= player1.legs.body.center.x
-				player1.healthDisplay.y	= player1.legs.body.y
-
-				player1.healthDisplay.text	= player1.legs.health.toString()
-
-				player2.healthDisplay.x	= player2.legs.body.center.x
-				player2.healthDisplay.y	= player2.legs.body.y
-
-				player2.healthDisplay.text	= player2.legs.health.toString()
-
-				groupBody2.x	= player2.legs.body.center.x
-				groupBody2.y	= player2.legs.body.center.y
+				player1.update()
+				player2.update()
 
 				# fire projectiles
 				velocity	= new Phaser.Point()
@@ -404,13 +351,15 @@ define ["phaser"],
 				RELOAD_TIME
 					velocity.normalize()
 
+					fireAngle	= velocity.angle(new Phaser.Point())
+
 					# set body rotation to match firing angle
-					groupBody.rotation	= velocity.angle(new Phaser.Point())
+					player1.rotateBody(fireAngle)
 
 					# left and right projectiles
 					for i in [-1, 1]
-						bullet	= groupProj.create(player1.legs.body.center.x,
-							player1.legs.body.center.y, "anims")
+						bullet	= groupProj.create(player1.body.center.x,
+							player1.body.center.y, "anims")
 						bullet.anchor.set(0.5, 0.5)
 
 						bullet.animations.add("bullet",
@@ -426,13 +375,13 @@ define ["phaser"],
 						# add position offset
 						bullet.body.position
 						# position at player weapon muzzle
-						.add(-player1.legs.body.width * 0.5,
-							player1.legs.body.height * 0.25 * i)
+						.add(-player1.body.width * 0.5,
+							player1.body.height * 0.25 * i)
 						# rotate around player body to match body rotation
-						.rotate(player1.legs.body.center.x,
-							player1.legs.body.center.y, groupBody.rotation)
+						.rotate(player1.body.center.x,
+							player1.body.center.y, fireAngle)
 
-						bullet.rotation			= groupBody.rotation
+						bullet.rotation			= fireAngle
 
 						bullet.body.velocity	= velocity
 						.clone()
