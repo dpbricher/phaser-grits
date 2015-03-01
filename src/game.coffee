@@ -1,5 +1,5 @@
-define ["phaser", "player", "projectile"],
-	(Phaser, Player, Projectile)->
+define ["phaser", "player", "projectile", "spawn_item"],
+	(Phaser, Player, Projectile, SpawnItem)->
 		class Game extends Phaser.State
 			PLAYER_SPEED		= 500
 			PROJECTILE_SPEED	= 1000
@@ -131,35 +131,27 @@ define ["phaser", "player", "projectile"],
 					wall.body.immovable	= true
 
 				# create spawners from tile map
-				createCanister			= (animName, animFramePrefix, audio)->
-					item	= groupSpawn.create(obj.x, obj.y, "anims")
-					item.anchor.set(0.5, 0.5)
-
-					item.animations.add(animName,
-						Phaser.Animation.generateFrameNames(animFramePrefix, 0,
-							15, ".png", 4), 25, true)
-					item.animations.play(animName)
-
-					item.audio				= audio
-
-					item.lastCollectTime	= 0
-
-					game.physics.arcade.enable(item)
-
-					item.body.immovable		= true
+				createCanister			= (posObj, animName, animFramePrefix,
+					audio, collisionFunction)->
+					item	= new SpawnItem(game, posObj.x, posObj.y, animName,
+						animFramePrefix, audio, collisionFunction)
+					groupSpawn.add(item)
 
 				for obj in tileMap.objects.environment
 					switch obj.name
 						when "HealthSpawner"
-							createCanister("canister_health",
-								"energy_canister_red_", sfx.item)
+							createCanister(obj, "canister_health",
+								"energy_canister_red_", sfx.item,
+								(player)->
+									player.health	+= 20
+							)
 
 						when "EnergySpawner"
-							createCanister("canister_energy",
+							createCanister(obj, "canister_energy",
 								"energy_canister_blue_", sfx.energy)
 
 						when "QuadDamageSpawner"
-							createCanister("quad_damage", "quad_damage_",
+							createCanister(obj, "quad_damage", "quad_damage_",
 								sfx.quad)
 
 						when "Team0Spawn0"
@@ -186,8 +178,8 @@ define ["phaser", "player", "projectile"],
 							teleDest	= /([\d\.]*)\s*,\s*([\d\.]*)/
 								.exec(obj.properties.destination)
 
-							teleporter.destX	= parseFloat(teleDest[1] || 0);
-							teleporter.destY	= parseFloat(teleDest[2] || 0);
+							teleporter.destX	= parseFloat(teleDest[1] || 0)
+							teleporter.destY	= parseFloat(teleDest[2] || 0)
 
 				# players
 				createPlayer	= (x, y)->
@@ -279,6 +271,8 @@ define ["phaser", "player", "projectile"],
 				game.physics.arcade.overlap(groupPlayer, groupSpawn,
 					(p, s)->
 						if s.visible
+							s.collisionFunction(p)
+
 							s.visible			= false
 							s.lastCollectTime	=
 								game.time.totalElapsedSeconds()
