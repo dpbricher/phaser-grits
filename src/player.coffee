@@ -16,6 +16,12 @@ define ["phaser"],
 				@anchor.set(0.5, 0.5)
 				@body.setSize(@body.width / 2, @body.height / 2)
 
+				# left and right arm projectile fire points
+				@_muzzleLeft	= new Phaser.Point(-@body.width * 0.5,
+					@body.height * -0.25)
+				@_muzzleRight	= new Phaser.Point(-@body.width * 0.5,
+					@body.height * 0.25)
+
 				@health			= 100
 				@lastFireTime	= game.time.totalElapsedSeconds()
 
@@ -35,6 +41,12 @@ define ["phaser"],
 
 			getBodyRotation:->
 				@bodyGroup.rotation
+
+			getMuzzleLeft:->
+				@_getTransformedMuzzle(@_muzzleLeft)
+
+			getMuzzleRight:->
+				@_getTransformedMuzzle(@_muzzleRight)
 
 			update:->
 				@bodyGroup.x		= @body.x + @body.width / 2
@@ -79,3 +91,9 @@ define ["phaser"],
 				@armRight.scale.set(1.0, -1.0)
 
 				group
+
+			_getTransformedMuzzle:(muzzleOffset)->
+				muzzleOffset
+				.clone()
+				.add(@body.center.x, @body.center.y)
+				.rotate(@body.center.x, @body.center.y, @bodyGroup.rotation)

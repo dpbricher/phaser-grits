@@ -308,17 +308,10 @@ define ["phaser", "player", "projectile"],
 				# movement
 				velocity	= player1.body.velocity.set(0, 0)
 
-				if moveKeys.right.isDown
-					velocity.x	+= 1
-
-				if moveKeys.left.isDown
-					velocity.x	-= 1
-
-				if moveKeys.up.isDown
-					velocity.y	-= 1
-
-				if moveKeys.down.isDown
-					velocity.y	+= 1
+				velocity.x += 1 if moveKeys.right.isDown
+				velocity.x -= 1 if moveKeys.left.isDown
+				velocity.y -= 1 if moveKeys.up.isDown
+				velocity.y += 1 if moveKeys.down.isDown
 
 				velocity
 				.normalize()
@@ -335,17 +328,10 @@ define ["phaser", "player", "projectile"],
 				# fire projectiles
 				velocity	= new Phaser.Point()
 
-				if cursors.right.isDown
-					velocity.x	+= 1
-
-				if cursors.left.isDown
-					velocity.x	-= 1
-
-				if cursors.up.isDown
-					velocity.y	-= 1
-
-				if cursors.down.isDown
-					velocity.y	+= 1
+				velocity.x += 1 if cursors.right.isDown
+				velocity.x -= 1 if cursors.left.isDown
+				velocity.y -= 1 if cursors.up.isDown
+				velocity.y += 1 if cursors.down.isDown
 
 				if !velocity.isZero() and
 				game.time.totalElapsedSeconds() - player1.lastFireTime >=
@@ -358,19 +344,11 @@ define ["phaser", "player", "projectile"],
 					player1.rotateBody(fireAngle)
 
 					# left and right projectiles
-					for i in [-1, 1]
-						bullet	= new Projectile(game, player1.body.center.x,
-							player1.body.center.y, player1, 5)
+					for fireOrigin in [player1.getMuzzleLeft(),
+					player1.getMuzzleRight()]
+						bullet	= new Projectile(game, fireOrigin.x,
+							fireOrigin.y, player1, 5)
 						groupProj.add(bullet)
-
-						# add position offset
-						bullet.body.position
-						# position at player weapon muzzle
-						.add(-player1.body.width * 0.5,
-							player1.body.height * 0.25 * i)
-						# rotate around player body to match body rotation
-						.rotate(player1.body.center.x,
-							player1.body.center.y, fireAngle)
 
 						bullet.rotation			= fireAngle
 
