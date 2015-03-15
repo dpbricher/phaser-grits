@@ -1,9 +1,12 @@
 requirejs.config
 	paths:
 		"phaser":"lib/phaser.min"
+		"easystar":"lib/easystar-0.1.13.min"
 	shim:
 		"phaser":
 			exports:"Phaser"
+		"easystar":
+			exports:"EasyStar"
 
 require ["preload", "game", "phaser"],
 	(Preload, Game, Phaser)->

@@ -1,5 +1,6 @@
-define ["phaser", "player", "projectile", "spawn_item"],
-	(Phaser, Player, Projectile, SpawnItem)->
+define ["phaser", "player", "projectile", "spawn_item", "grid_mapper",
+	"easystar"],
+	(Phaser, Player, Projectile, SpawnItem, GridMapper, EasyStar)->
 		class Game extends Phaser.State
 			PLAYER_SPEED		= 500
 			PROJECTILE_SPEED	= 1000
@@ -36,6 +37,9 @@ define ["phaser", "player", "projectile", "spawn_item"],
 			# Phaser.Point player spawn location
 			playerSpawn		= null
 			playerSpawn2	= null
+
+			# grid model of map
+			gridMap			= null
 
 			moveKeys		= null
 			cursors			= null
@@ -116,6 +120,11 @@ define ["phaser", "player", "projectile", "spawn_item"],
 
 				# create sprites with null images for each collision area
 				for obj in tileMap.objects.collision
+					# some objects have an undefined width and height for some reason;
+					# skip those objects
+					if !obj.width?
+						continue
+
 					group	=
 						if obj.properties.collisionFlags
 						then groupHole
@@ -147,8 +156,9 @@ define ["phaser", "player", "projectile", "spawn_item"],
 							)
 
 						when "EnergySpawner"
-							createCanister(obj, "canister_energy",
-								"energy_canister_blue_", sfx.energy)
+							""
+							# createCanister(obj, "canister_energy",
+								# "energy_canister_blue_", sfx.energy)
 
 						when "QuadDamageSpawner"
 							createCanister(obj, "quad_damage", "quad_damage_",
@@ -191,9 +201,8 @@ define ["phaser", "player", "projectile", "spawn_item"],
 					player
 
 				player1		= createPlayer(playerSpawn.x + 100, playerSpawn.y)
-				player2		= createPlayer(playerSpawn.x, playerSpawn.y)
-				# player2		= createPlayer(playerSpawn2.x, playerSpawn2.y,
-					# groupBody2)
+				# player2		= createPlayer(playerSpawn.x, playerSpawn.y)
+				player2		= createPlayer(playerSpawn2.x, playerSpawn2.y)
 
 				# input
 				keyboard	= game.input.keyboard
@@ -207,6 +216,48 @@ define ["phaser", "player", "projectile", "spawn_item"],
 					down:keyboard.addKey(Phaser.Keyboard.S)
 					left:keyboard.addKey(Phaser.Keyboard.A)
 					right:keyboard.addKey(Phaser.Keyboard.D)
+
+				# grid map
+				gridMap				= new GridMapper(player2.body.width, player2.body.height,
+					new Phaser.Rectangle(0, 0, game.world.width, game.world.height),
+					groupWall, groupHole)
+					# groupWall)
+
+				# test grid map
+				# for l, i in gridMap.getGridList()
+				# 	for e, j in l
+				# 		if e == 1
+				# 			createCanister(
+				# 				{ x:(i + 0.5) * player2.body.width, y:(j + 0.5) * player2.body.height },
+				# 				"canister_energy",
+				# 				"energy_canister_blue_",
+				# 				sfx.energy
+				# 			)
+
+				# easy star test
+				# there seems to be a mix up with the co-ordinate systems being used
+				# need to figure that out
+				easyStar	= new EasyStar.js()
+
+				showPath	= (results)=>
+					for p in results
+						[rx, ry]	= gridMap.toXy(p.y, p.x)
+						createCanister(
+							{ x:rx + 0.5 * player2.body.width, y:ry + 0.5 * player2.body.height },
+							"canister_energy",
+							"energy_canister_blue_",
+							sfx.energy
+						)
+
+				[startX, startY]	= gridMap.toIj(playerSpawn.x, playerSpawn.y)
+				[endX, endY]			= gridMap.toIj(playerSpawn2.x, playerSpawn2.y)
+				# item	= x:5128, y:1840
+				# [endX, endY]			= gridMap.toIj(item.x, item.y)
+
+				easyStar.setGrid(gridMap.getGridList())
+				easyStar.setAcceptableTiles([0])
+				easyStar.findPath(startX, startY, endX, endY, showPath)
+				easyStar.calculate()
 
 				# camera
 				game.camera.follow(player1)
@@ -331,6 +382,7 @@ define ["phaser", "player", "projectile", "spawn_item"],
 				game.time.totalElapsedSeconds() - player1.lastFireTime >=
 				RELOAD_TIME
 					velocity.normalize()
+					console.log(player1.body.x, player1.body.y)
 
 					fireAngle	= velocity.angle(new Phaser.Point())
 
