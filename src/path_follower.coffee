@@ -11,15 +11,13 @@ define ["phaser"],
         vec = new Phaser.Point()
 
         if @_nextIndex < @_pathList.length
-          t = @_getNextNode()
+          target  = @_getNextNode()
 
-          if @_player.body.position.distance({ x:t[0], y:t[1] }) <
+          if @_player.body.position.distance({ x:target[0], y:target[1] }) <
           @_player.body.width / 4
             ++@_nextIndex
           else
-        # if @_nextIndex < @_pathList.length
-            dest  = new Phaser.Point(@_getNextNode()...)
-
+            dest  = new Phaser.Point(target...)
 
             vec   = dest
               .subtract(@_player.body.position.x, @_player.body.position.y)
