@@ -1,6 +1,6 @@
 define ["phaser", "player", "projectile", "spawn_item", "grid_mapper",
-	"path_finder"],
-	(Phaser, Player, Projectile, SpawnItem, GridMapper, PathFinder)->
+	"path_finder", "path_follower"],
+	(Phaser, Player, Projectile, SpawnItem, GridMapper, PathFinder, Follower)->
 		class Game extends Phaser.State
 			PLAYER_SPEED		= 500
 			PROJECTILE_SPEED	= 1000
@@ -40,6 +40,8 @@ define ["phaser", "player", "projectile", "spawn_item", "grid_mapper",
 
 			# grid model of map
 			gridMap			= null
+
+			follower		= null
 
 			moveKeys		= null
 			cursors			= null
@@ -221,55 +223,15 @@ define ["phaser", "player", "projectile", "spawn_item", "grid_mapper",
 				gridMap				= new GridMapper(player2.body.width, player2.body.height,
 					new Phaser.Rectangle(0, 0, game.world.width, game.world.height),
 					groupWall, groupHole)
-					# groupWall)
-
-				# test grid map
-				# for l, i in gridMap.getGridList()
-				# 	for e, j in l
-				# 		if e == 1
-				# 			[px, py]	= gridMap.toXy(i, j)
-				#
-				# 			# console.log "i, j = ", i, j
-				# 			# console.log "my i, j = ", gridMap.toIj(px, py)...
-				#
-				# 			createCanister(
-				# 				{ x:px + 0.5 * player2.body.width, y:py + 0.5 * player2.body.height },
-				# 				"canister_energy",
-				# 				"energy_canister_blue_",
-				# 				sfx.energy
-				# 			)
-
-				# easy star test
-				# there seems to be a mix up with the co-ordinate systems being used
-				# need to figure that out
-				# easyStar	= new EasyStar.js()
-				#
-				showPath	= (results)=>
-					for p in results
-						# [rx, ry]	= gridMap.toXy(p.x, p.y)
-						[rx, ry]	= p
-
-						createCanister(
-							{ x:rx + 0.5 * player2.body.width, y:ry + 0.5 * player2.body.height },
-							"canister_energy",
-							"energy_canister_blue_",
-							sfx.energy
-						)
-				#
-				# [startI, startJ]	= gridMap.toIj(playerSpawn.x, playerSpawn.y)
-				# [endI, endJ]			= gridMap.toIj(playerSpawn2.x, playerSpawn2.y)
-				# # item	= x:5128, y:1840 + player1.body.height
-				# # [endI, endJ]			= gridMap.toIj(item.x, item.y)
-				#
-				# easyStar.setGrid(gridMap.getGridTransposed())
-				# easyStar.setAcceptableTiles([0])
-				# easyStar.findPath(startI, startJ, endI, endJ, showPath)
-				# easyStar.calculate()
+				follower		= new Follower(player2)
 
 				pathFinder	= new PathFinder(gridMap)
 
-				pathFinder.findXy(playerSpawn.x, playerSpawn.y, playerSpawn2.x,
-					playerSpawn2.y, showPath)
+				setP2Path		= (results)=>
+					follower.setPath(results)
+
+				pathFinder.findXy(playerSpawn2.x, playerSpawn2.y, playerSpawn.x,
+					playerSpawn.y, setP2Path)
 
 				# camera
 				game.camera.follow(player1)
@@ -374,10 +336,17 @@ define ["phaser", "player", "projectile", "spawn_item", "grid_mapper",
 				.normalize()
 				.multiply(PLAYER_SPEED, PLAYER_SPEED)
 
+				newVel	= follower.getMoveVec()
+
+				player2.body.velocity
+				.set(newVel.x, newVel.y)
+				.multiply(PLAYER_SPEED, PLAYER_SPEED)
+
 				# if player is moving then advance walk animation
-				if !velocity.isZero()
-					player1.rotateLegs(velocity.angle(new Phaser.Point))
-					player1.animations.next(1)
+				for p in [player1, player2]
+					if !p.body.velocity.isZero()
+						p.rotateLegs(velocity.angle(new Phaser.Point))
+						p.animations.next(1)
 
 				player1.update()
 				player2.update()
