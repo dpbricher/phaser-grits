@@ -1,6 +1,6 @@
 define ["phaser", "player", "projectile", "spawn_item", "grid_mapper",
-	"easystar"],
-	(Phaser, Player, Projectile, SpawnItem, GridMapper, EasyStar)->
+	"path_finder"],
+	(Phaser, Player, Projectile, SpawnItem, GridMapper, PathFinder)->
 		class Game extends Phaser.State
 			PLAYER_SPEED		= 500
 			PROJECTILE_SPEED	= 1000
@@ -242,28 +242,34 @@ define ["phaser", "player", "projectile", "spawn_item", "grid_mapper",
 				# easy star test
 				# there seems to be a mix up with the co-ordinate systems being used
 				# need to figure that out
-				easyStar	= new EasyStar.js()
-
+				# easyStar	= new EasyStar.js()
+				#
 				showPath	= (results)=>
 					for p in results
-						[rx, ry]	= gridMap.toXy(p.x, p.y)
-						# [rx, ry]	= gridMap.toXy(p.y, p.x)
+						# [rx, ry]	= gridMap.toXy(p.x, p.y)
+						[rx, ry]	= p
+
 						createCanister(
 							{ x:rx + 0.5 * player2.body.width, y:ry + 0.5 * player2.body.height },
 							"canister_energy",
 							"energy_canister_blue_",
 							sfx.energy
 						)
+				#
+				# [startI, startJ]	= gridMap.toIj(playerSpawn.x, playerSpawn.y)
+				# [endI, endJ]			= gridMap.toIj(playerSpawn2.x, playerSpawn2.y)
+				# # item	= x:5128, y:1840 + player1.body.height
+				# # [endI, endJ]			= gridMap.toIj(item.x, item.y)
+				#
+				# easyStar.setGrid(gridMap.getGridTransposed())
+				# easyStar.setAcceptableTiles([0])
+				# easyStar.findPath(startI, startJ, endI, endJ, showPath)
+				# easyStar.calculate()
 
-				[startI, startJ]	= gridMap.toIj(playerSpawn.x, playerSpawn.y)
-				[endI, endJ]			= gridMap.toIj(playerSpawn2.x, playerSpawn2.y)
-				# item	= x:5128, y:1840 + player1.body.height
-				# [endI, endJ]			= gridMap.toIj(item.x, item.y)
+				pathFinder	= new PathFinder(gridMap)
 
-				easyStar.setGrid(gridMap.getGridTransposed())
-				easyStar.setAcceptableTiles([0])
-				easyStar.findPath(startI, startJ, endI, endJ, showPath)
-				easyStar.calculate()
+				pathFinder.findXy(playerSpawn.x, playerSpawn.y, playerSpawn2.x,
+					playerSpawn2.y, showPath)
 
 				# camera
 				game.camera.follow(player1)
