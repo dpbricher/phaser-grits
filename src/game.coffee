@@ -227,8 +227,13 @@ define ["phaser", "player", "projectile", "spawn_item", "grid_mapper",
 				# for l, i in gridMap.getGridList()
 				# 	for e, j in l
 				# 		if e == 1
+				# 			[px, py]	= gridMap.toXy(i, j)
+				#
+				# 			# console.log "i, j = ", i, j
+				# 			# console.log "my i, j = ", gridMap.toIj(px, py)...
+				#
 				# 			createCanister(
-				# 				{ x:(i + 0.5) * player2.body.width, y:(j + 0.5) * player2.body.height },
+				# 				{ x:px + 0.5 * player2.body.width, y:py + 0.5 * player2.body.height },
 				# 				"canister_energy",
 				# 				"energy_canister_blue_",
 				# 				sfx.energy
@@ -241,7 +246,8 @@ define ["phaser", "player", "projectile", "spawn_item", "grid_mapper",
 
 				showPath	= (results)=>
 					for p in results
-						[rx, ry]	= gridMap.toXy(p.y, p.x)
+						[rx, ry]	= gridMap.toXy(p.x, p.y)
+						# [rx, ry]	= gridMap.toXy(p.y, p.x)
 						createCanister(
 							{ x:rx + 0.5 * player2.body.width, y:ry + 0.5 * player2.body.height },
 							"canister_energy",
@@ -249,14 +255,14 @@ define ["phaser", "player", "projectile", "spawn_item", "grid_mapper",
 							sfx.energy
 						)
 
-				[startX, startY]	= gridMap.toIj(playerSpawn.x, playerSpawn.y)
-				[endX, endY]			= gridMap.toIj(playerSpawn2.x, playerSpawn2.y)
-				# item	= x:5128, y:1840
-				# [endX, endY]			= gridMap.toIj(item.x, item.y)
+				[startI, startJ]	= gridMap.toIj(playerSpawn.x, playerSpawn.y)
+				[endI, endJ]			= gridMap.toIj(playerSpawn2.x, playerSpawn2.y)
+				# item	= x:5128, y:1840 + player1.body.height
+				# [endI, endJ]			= gridMap.toIj(item.x, item.y)
 
-				easyStar.setGrid(gridMap.getGridList())
+				easyStar.setGrid(gridMap.getGridTransposed())
 				easyStar.setAcceptableTiles([0])
-				easyStar.findPath(startX, startY, endX, endY, showPath)
+				easyStar.findPath(startI, startJ, endI, endJ, showPath)
 				easyStar.calculate()
 
 				# camera

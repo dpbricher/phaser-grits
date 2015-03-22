@@ -9,10 +9,13 @@ define ["phaser"],
         if @_area.width % gridX || @_area.height % gridY
           throw new Error("@_area width/height must be multiples of gridX/Y")
 
-        @_cellDim   = new Phaser.Point(gridX, gridY)
+        @_cellDim         = new Phaser.Point(gridX, gridY)
 
         # create cellX by cellY two dimensional array:
-        @_gridList  = ([] for x in [0...@_area.width / @_cellDim.x])
+        @_gridList        = ([] for x in [0...@_area.width / @_cellDim.x])
+
+        # also create transposed version of this array
+        @_gridTransposed  = ([] for y in [0...@_area.height / @_cellDim.y])
 
         # enum constants for grid
         @EMPTY      = 0
@@ -22,6 +25,9 @@ define ["phaser"],
 
       getGridList:->
         @_gridList[..]
+
+      getGridTransposed:->
+        @_gridTransposed[..]
 
       #
       # convert xy coordinates to ij grid list indexes
@@ -55,4 +61,5 @@ define ["phaser"],
                   cellValue = @BLOCKED
                   break
 
-            @_gridList[i][j]  = cellValue
+            @_gridTransposed[j][i]  =
+            @_gridList[i][j]        = cellValue
