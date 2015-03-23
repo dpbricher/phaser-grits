@@ -1,6 +1,5 @@
-define ["phaser", "player", "projectile", "spawn_item", "grid_mapper",
-	"path_finder", "path_follower"],
-	(Phaser, Player, Projectile, SpawnItem, GridMapper, PathFinder, Follower)->
+define ["phaser", "player", "projectile", "spawn_item", "move_ai"],
+	(Phaser, Player, Projectile, SpawnItem, MoveAi)->
 		class Game extends Phaser.State
 			PLAYER_SPEED		= 500
 			PROJECTILE_SPEED	= 1000
@@ -38,10 +37,7 @@ define ["phaser", "player", "projectile", "spawn_item", "grid_mapper",
 			playerSpawn		= null
 			playerSpawn2	= null
 
-			# grid model of map
-			gridMap			= null
-
-			follower		= null
+			player2MoveAi	= null
 
 			moveKeys		= null
 			cursors			= null
@@ -158,9 +154,8 @@ define ["phaser", "player", "projectile", "spawn_item", "grid_mapper",
 							)
 
 						when "EnergySpawner"
-							""
-							# createCanister(obj, "canister_energy",
-								# "energy_canister_blue_", sfx.energy)
+							createCanister(obj, "canister_energy",
+								"energy_canister_blue_", sfx.energy)
 
 						when "QuadDamageSpawner"
 							createCanister(obj, "quad_damage", "quad_damage_",
@@ -195,15 +190,14 @@ define ["phaser", "player", "projectile", "spawn_item", "grid_mapper",
 
 				# players
 				createPlayer	= (x, y)->
-					player	= new Player(game, x, y)
+					player	= new Player(game, x, y, PLAYER_SPEED)
 
 					groupPlayer.add(player)
 					groupBody.add(player.bodyGroup)
 
 					player
 
-				player1		= createPlayer(playerSpawn.x + 100, playerSpawn.y)
-				# player2		= createPlayer(playerSpawn.x, playerSpawn.y)
+				player1		= createPlayer(playerSpawn.x, playerSpawn.y)
 				player2		= createPlayer(playerSpawn2.x, playerSpawn2.y)
 
 				# input
@@ -219,19 +213,40 @@ define ["phaser", "player", "projectile", "spawn_item", "grid_mapper",
 					left:keyboard.addKey(Phaser.Keyboard.A)
 					right:keyboard.addKey(Phaser.Keyboard.D)
 
-				# grid map
-				gridMap				= new GridMapper(player2.body.width, player2.body.height,
-					new Phaser.Rectangle(0, 0, game.world.width, game.world.height),
-					groupWall, groupHole)
-				follower		= new Follower(player2)
+				# player 2 pathfinding ai
+				areaRect		= new Phaser.Rectangle(1070, 1070, 5237 - 1070,
+					5265 - 1070)
+				# this is *a* way of aligning the grid with the map
+				areaRect.x	-= areaRect.x % player1.body.width
+				areaRect.y	-= areaRect.y % player1.body.height
 
-				pathFinder	= new PathFinder(gridMap)
+				areaRect.offset(player2.body.width, player2.body.height)
 
-				setP2Path		= (results)=>
-					follower.setPath(results)
+				player2MoveAi = new MoveAi(player2, areaRect, groupWall, groupHole)
 
-				pathFinder.findXy(playerSpawn2.x, playerSpawn2.y, playerSpawn.x,
-					playerSpawn.y, setP2Path)
+				# set the unreachable areas to impassable (for now)
+				player2MoveAi.setGridAreasTo(
+					new Phaser.Rectangle(4630, 1163, 583, 559),
+					new Phaser.Rectangle(1123, 4589, 453, 578),
+					1
+				)
+
+				# set teleporters off limits too
+				tpList	= []
+				groupTeleport.forEach(
+					(t)->
+						# the anchor point offset doesn't get applied until first update,
+						# so manually offsetting it here
+						area	= new Phaser.Rectangle(t.x, t.y, t.width, t.height)
+						.offset(-t.width / 2, -t.height / 2)
+
+						tpList.push(area)
+				)
+
+				player2MoveAi.setGridAreasTo(tpList..., 1)
+
+				# start random movement
+				player2MoveAi.seekRandomCell()
 
 				# camera
 				game.camera.follow(player1)
@@ -334,13 +349,9 @@ define ["phaser", "player", "projectile", "spawn_item", "grid_mapper",
 
 				velocity
 				.normalize()
-				.multiply(PLAYER_SPEED, PLAYER_SPEED)
+				.multiply(player1.moveSpeed, player1.moveSpeed)
 
-				newVel	= follower.getMoveVec()
-
-				player2.body.velocity
-				.set(newVel.x, newVel.y)
-				.multiply(PLAYER_SPEED, PLAYER_SPEED)
+				player2MoveAi.update()
 
 				# if player is moving then advance walk animation
 				for p in [player1, player2]
@@ -363,7 +374,6 @@ define ["phaser", "player", "projectile", "spawn_item", "grid_mapper",
 				game.time.totalElapsedSeconds() - player1.lastFireTime >=
 				RELOAD_TIME
 					velocity.normalize()
-					console.log(player1.body.x, player1.body.y)
 
 					fireAngle	= velocity.angle(new Phaser.Point())
 
@@ -401,3 +411,7 @@ define ["phaser", "player", "projectile", "spawn_item", "grid_mapper",
 					player1.lastFireTime	= game.time.totalElapsedSeconds()
 
 			# render:->
+			# 	groupTeleport.forEach(
+			# 		(t)->
+			# 			game.debug.body(t)
+			# 	)
