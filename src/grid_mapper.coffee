@@ -30,6 +30,19 @@ define ["phaser"],
         @_gridTransposed[..]
 
       #
+      # finds all grid spaces that are covered by the supplied area rectangle
+      # and changes their value to newValue
+      #
+      setArea:(areaRect, newValue)->
+        cellRect  = new Phaser.Rectangle(0, 0, @_cellDim.x, @_cellDim.y)
+
+        for col, i in @_gridList
+          for value, j in col
+            [cellRect.x, cellRect.y]  = @toXy(i, j)
+
+            col[j]  = newValue if areaRect.intersects(cellRect)
+
+      #
       # convert xy coordinates to ij grid list indexes
       #
       toIj:(x, y)->
@@ -41,6 +54,7 @@ define ["phaser"],
       #
       toXy:(i, j)->
         [@_area.x + i * @_cellDim.x, @_area.y + j * @_cellDim.y]
+
 
       _parseMap:()->
         cellArea  = new Phaser.Rectangle(0, 0, @_cellDim.x, @_cellDim.y)

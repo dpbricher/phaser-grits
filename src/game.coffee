@@ -223,6 +223,11 @@ define ["phaser", "player", "projectile", "spawn_item", "grid_mapper",
 				gridMap				= new GridMapper(player2.body.width, player2.body.height,
 					new Phaser.Rectangle(0, 0, game.world.width, game.world.height),
 					groupWall, groupHole)
+
+				# set the unreachable areas to impassable (for now)
+				gridMap.setArea(new Phaser.Rectangle(4630, 1163, 583, 559), 1)
+				gridMap.setArea(new Phaser.Rectangle(1123, 4589, 453, 578), 1)
+
 				follower		= new Follower(player2)
 
 				pathFinder	= new PathFinder(gridMap)
