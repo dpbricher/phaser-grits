@@ -41,6 +41,8 @@ define ["phaser", "player", "projectile", "spawn_item", "grid_mapper",
 			# grid model of map
 			gridMap			= null
 
+			pathFinder	= null
+
 			follower		= null
 
 			moveKeys		= null
@@ -220,23 +222,76 @@ define ["phaser", "player", "projectile", "spawn_item", "grid_mapper",
 					right:keyboard.addKey(Phaser.Keyboard.D)
 
 				# grid map
-				gridMap				= new GridMapper(player2.body.width, player2.body.height,
-					new Phaser.Rectangle(0, 0, game.world.width, game.world.height),
-					groupWall, groupHole)
+				areaRect		= new Phaser.Rectangle(1070, 1070, 5237 - 1070,
+					5265 - 1070)
+				# this is *a* way of aligning the grid with the map
+				areaRect.x	-= areaRect.x % player1.body.width
+				areaRect.y	-= areaRect.y % player1.body.height
+
+				areaRect.offset(player2.body.width, player2.body.height)
+
+				gridMap			= new GridMapper(player2.body.width, player2.body.height,
+					areaRect, groupWall, groupHole)
 
 				# set the unreachable areas to impassable (for now)
-				gridMap.setArea(new Phaser.Rectangle(4630, 1163, 583, 559), 1)
-				gridMap.setArea(new Phaser.Rectangle(1123, 4589, 453, 578), 1)
+				gridMap.setAreasTo(
+					new Phaser.Rectangle(4630, 1163, 583, 559),
+					new Phaser.Rectangle(1123, 4589, 453, 578),
+					1
+				)
+
+				# set teleporters off limits too
+				tpList	= []
+				groupTeleport.forEach(
+					(t)->
+						# the anchor point offset doesn't get applied until first update,
+						# so manually offsetting it here
+						area	= new Phaser.Rectangle(t.x, t.y, t.width, t.height)
+						.offset(-t.width / 2, -t.height / 2)
+
+						tpList.push(area)
+				)
+				gridMap.setAreasTo(tpList..., 1)
+
+				# test grid map
+				# for l, i in gridMap.getGridList()
+				# 	for e, j in l
+				# 		if e == 1
+				# 			[px, py]        = gridMap.toXy(i, j)
+				#
+				# 			createCanister(
+				#         { x:px + 0.5 * player2.body.width, y:py + 0.5 * player2.body.height },
+				#         "canister_energy",
+				#         "energy_canister_blue_",
+				#         sfx.energy
+				# 			)
 
 				follower		= new Follower(player2)
 
 				pathFinder	= new PathFinder(gridMap)
 
-				setP2Path		= (results)=>
-					follower.setPath(results)
+				randList		= gridMap.getPassable()
+				randDest		= gridMap.toXy(
+					randList[randList.length * Math.random() | 0]...
+				)
 
-				pathFinder.findXy(playerSpawn2.x, playerSpawn2.y, playerSpawn.x,
-					playerSpawn.y, setP2Path)
+				setP2Path		= (results)=>
+					if results?
+						follower.setPath(results)
+						# player1.moveTo(randDest...)
+					else
+						console.log "teleport to:", randDest...
+						follower.setPath([])
+						setTimeout(->
+							player1.moveTo(randDest...)
+							player1.body.velocity.set(1, 1)
+						, 1000)
+
+				pathFinder.findXy(playerSpawn2.x, playerSpawn2.y, randDest...,
+					setP2Path)
+				#
+				# pathFinder.findXy(playerSpawn.x, playerSpawn.y, playerSpawn2.x,
+				# 	playerSpawn2.y, setP2Path)
 
 				# camera
 				game.camera.follow(player1)
@@ -341,11 +396,20 @@ define ["phaser", "player", "projectile", "spawn_item", "grid_mapper",
 				.normalize()
 				.multiply(PLAYER_SPEED, PLAYER_SPEED)
 
-				newVel	= follower.getMoveVec()
+				if follower.hasNext()
+					newVel	= follower.getMoveVec()
+					player2.body.velocity
+					# player1.body.velocity
+					.set(newVel.x, newVel.y)
+					.multiply(PLAYER_SPEED, PLAYER_SPEED)
+				else
+					randList		= gridMap.getPassable()
+					randDest		= gridMap.toXy(
+						randList[randList.length * Math.random() | 0]...
+					)
 
-				player2.body.velocity
-				.set(newVel.x, newVel.y)
-				.multiply(PLAYER_SPEED, PLAYER_SPEED)
+					pathFinder.findXy(player1.body.position.x, player1.body.position.y,
+						randDest..., ((r)->follower.setPath(r)))
 
 				# if player is moving then advance walk animation
 				for p in [player1, player2]
@@ -368,7 +432,6 @@ define ["phaser", "player", "projectile", "spawn_item", "grid_mapper",
 				game.time.totalElapsedSeconds() - player1.lastFireTime >=
 				RELOAD_TIME
 					velocity.normalize()
-					console.log(player1.body.x, player1.body.y)
 
 					fireAngle	= velocity.angle(new Phaser.Point())
 
@@ -405,4 +468,8 @@ define ["phaser", "player", "projectile", "spawn_item", "grid_mapper",
 
 					player1.lastFireTime	= game.time.totalElapsedSeconds()
 
-			# render:->
+			render:->
+				groupTeleport.forEach(
+					(t)->
+						game.debug.body(t)
+				)

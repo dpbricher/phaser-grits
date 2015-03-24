@@ -10,7 +10,7 @@ define ["phaser"],
       getMoveVec:()->
         vec = new Phaser.Point()
 
-        if @_nextIndex < @_pathList.length
+        if @hasNext()
           target  = @_getNextNode()
 
           if @_player.body.position.distance({ x:target[0], y:target[1] }) <
@@ -24,6 +24,9 @@ define ["phaser"],
               .normalize()
 
         vec
+
+      hasNext:->
+        @_nextIndex < @_pathList.length
 
 
       _getNextNode:->
