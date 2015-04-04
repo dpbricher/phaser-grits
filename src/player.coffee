@@ -7,7 +7,7 @@
 define ["phaser"],
 	(Phaser)->
 		class Player extends Phaser.Sprite
-			constructor:(game, x, y)->
+			constructor:(game, x, y, @moveSpeed)->
 				super(game, x, y, "anims")
 
 				game.add.existing(this)

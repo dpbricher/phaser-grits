@@ -1,6 +1,5 @@
-define ["phaser", "player", "projectile", "spawn_item", "grid_mapper",
-	"path_finder", "path_follower"],
-	(Phaser, Player, Projectile, SpawnItem, GridMapper, PathFinder, Follower)->
+define ["phaser", "player", "projectile", "spawn_item", "move_ai"],
+	(Phaser, Player, Projectile, SpawnItem, MoveAi)->
 		class Game extends Phaser.State
 			PLAYER_SPEED		= 500
 			PROJECTILE_SPEED	= 1000
@@ -38,12 +37,7 @@ define ["phaser", "player", "projectile", "spawn_item", "grid_mapper",
 			playerSpawn		= null
 			playerSpawn2	= null
 
-			# grid model of map
-			gridMap			= null
-
-			pathFinder	= null
-
-			follower		= null
+			player2MoveAi	= null
 
 			moveKeys		= null
 			cursors			= null
@@ -160,9 +154,8 @@ define ["phaser", "player", "projectile", "spawn_item", "grid_mapper",
 							)
 
 						when "EnergySpawner"
-							""
-							# createCanister(obj, "canister_energy",
-								# "energy_canister_blue_", sfx.energy)
+							createCanister(obj, "canister_energy",
+								"energy_canister_blue_", sfx.energy)
 
 						when "QuadDamageSpawner"
 							createCanister(obj, "quad_damage", "quad_damage_",
@@ -197,15 +190,14 @@ define ["phaser", "player", "projectile", "spawn_item", "grid_mapper",
 
 				# players
 				createPlayer	= (x, y)->
-					player	= new Player(game, x, y)
+					player	= new Player(game, x, y, PLAYER_SPEED)
 
 					groupPlayer.add(player)
 					groupBody.add(player.bodyGroup)
 
 					player
 
-				player1		= createPlayer(playerSpawn.x + 100, playerSpawn.y)
-				# player2		= createPlayer(playerSpawn.x, playerSpawn.y)
+				player1		= createPlayer(playerSpawn.x, playerSpawn.y)
 				player2		= createPlayer(playerSpawn2.x, playerSpawn2.y)
 
 				# input
@@ -221,7 +213,7 @@ define ["phaser", "player", "projectile", "spawn_item", "grid_mapper",
 					left:keyboard.addKey(Phaser.Keyboard.A)
 					right:keyboard.addKey(Phaser.Keyboard.D)
 
-				# grid map
+				# player 2 pathfinding ai
 				areaRect		= new Phaser.Rectangle(1070, 1070, 5237 - 1070,
 					5265 - 1070)
 				# this is *a* way of aligning the grid with the map
@@ -230,11 +222,10 @@ define ["phaser", "player", "projectile", "spawn_item", "grid_mapper",
 
 				areaRect.offset(player2.body.width, player2.body.height)
 
-				gridMap			= new GridMapper(player2.body.width, player2.body.height,
-					areaRect, groupWall, groupHole)
+				player2MoveAi = new MoveAi(player2, areaRect, groupWall, groupHole)
 
 				# set the unreachable areas to impassable (for now)
-				gridMap.setAreasTo(
+				player2MoveAi.getGridMap().setAreasTo(
 					new Phaser.Rectangle(4630, 1163, 583, 559),
 					new Phaser.Rectangle(1123, 4589, 453, 578),
 					1
@@ -251,47 +242,10 @@ define ["phaser", "player", "projectile", "spawn_item", "grid_mapper",
 
 						tpList.push(area)
 				)
-				gridMap.setAreasTo(tpList..., 1)
+				player2MoveAi.getGridMap().setAreasTo(tpList..., 1)
 
-				# test grid map
-				# for l, i in gridMap.getGridList()
-				# 	for e, j in l
-				# 		if e == 1
-				# 			[px, py]        = gridMap.toXy(i, j)
-				#
-				# 			createCanister(
-				#         { x:px + 0.5 * player2.body.width, y:py + 0.5 * player2.body.height },
-				#         "canister_energy",
-				#         "energy_canister_blue_",
-				#         sfx.energy
-				# 			)
-
-				follower		= new Follower(player2)
-
-				pathFinder	= new PathFinder(gridMap)
-
-				randList		= gridMap.getPassable()
-				randDest		= gridMap.toXy(
-					randList[randList.length * Math.random() | 0]...
-				)
-
-				setP2Path		= (results)=>
-					if results?
-						follower.setPath(results)
-						# player1.moveTo(randDest...)
-					else
-						console.log "teleport to:", randDest...
-						follower.setPath([])
-						setTimeout(->
-							player1.moveTo(randDest...)
-							player1.body.velocity.set(1, 1)
-						, 1000)
-
-				pathFinder.findXy(playerSpawn2.x, playerSpawn2.y, randDest...,
-					setP2Path)
-				#
-				# pathFinder.findXy(playerSpawn.x, playerSpawn.y, playerSpawn2.x,
-				# 	playerSpawn2.y, setP2Path)
+				# start random movement
+				player2MoveAi.seekRandomCell()
 
 				# camera
 				game.camera.follow(player1)
@@ -394,22 +348,9 @@ define ["phaser", "player", "projectile", "spawn_item", "grid_mapper",
 
 				velocity
 				.normalize()
-				.multiply(PLAYER_SPEED, PLAYER_SPEED)
+				.multiply(player1.moveSpeed, player1.moveSpeed)
 
-				if follower.hasNext()
-					newVel	= follower.getMoveVec()
-					player2.body.velocity
-					# player1.body.velocity
-					.set(newVel.x, newVel.y)
-					.multiply(PLAYER_SPEED, PLAYER_SPEED)
-				else
-					randList		= gridMap.getPassable()
-					randDest		= gridMap.toXy(
-						randList[randList.length * Math.random() | 0]...
-					)
-
-					pathFinder.findXy(player1.body.position.x, player1.body.position.y,
-						randDest..., ((r)->follower.setPath(r)))
+				player2MoveAi.update()
 
 				# if player is moving then advance walk animation
 				for p in [player1, player2]
@@ -468,8 +409,8 @@ define ["phaser", "player", "projectile", "spawn_item", "grid_mapper",
 
 					player1.lastFireTime	= game.time.totalElapsedSeconds()
 
-			render:->
-				groupTeleport.forEach(
-					(t)->
-						game.debug.body(t)
-				)
+			# render:->
+			# 	groupTeleport.forEach(
+			# 		(t)->
+			# 			game.debug.body(t)
+			# 	)
