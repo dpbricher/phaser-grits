@@ -4,7 +4,7 @@ define ["phaser"],
       drawPathXy:(pathList, radius = 5, colour = 0xff0000)->
         @clear()
 
-        @beginFill(colour)
+        @beginFill(colour, 0.5)
 
         for [x, y] in pathList
           @drawCircle(x, y, radius)

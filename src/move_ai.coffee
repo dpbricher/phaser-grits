@@ -8,9 +8,10 @@ define ["grid_mapper", "path_finder", "path_follower", "path_drawer"],
         @_follower    = new Follower(@_player)
 
         @_pathFinder  = new PathFinder(@_gridMap)
+        @_pathFinder.setXyOffset(@_player.body.width / 2,
+          @_player.body.height / 2)
 
         @_debugDraw   = new PathDrawer(@_player.game, 0, 0)
-
         @_player.game.add.existing(@_debugDraw)
 
       seekRandomCell:->
@@ -21,8 +22,8 @@ define ["grid_mapper", "path_finder", "path_follower", "path_drawer"],
         @seekPos(randDest...)
 
       seekPos:(x, y)->
-        @_pathFinder.findXy(@_player.body.x, @_player.body.y, x, y,
-          (r)=>@_onSeekDone(r))
+        @_pathFinder.findXy(@_player.body.center.x, @_player.body.center.y, x,
+          y, (r)=>@_onSeekDone(r))
 
       update:->
         if @_follower.hasNext()
@@ -42,4 +43,4 @@ define ["grid_mapper", "path_finder", "path_follower", "path_drawer"],
           if results?
             @_follower.setPath(results)
 
-            @_debugDraw.drawPathXy(results)
+            @_debugDraw.drawPathXy(results, @_player.body.width)
