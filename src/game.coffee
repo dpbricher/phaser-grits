@@ -248,7 +248,7 @@ define ["phaser", "player", "projectile", "spawn_item", "move_ai"],
 				player2MoveAi.seekRandomCell()
 
 				# camera
-				game.camera.follow(player1)
+				game.camera.follow(player2)
 
 			update:->
 				# collision
