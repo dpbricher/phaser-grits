@@ -35,8 +35,9 @@ define ["grid_mapper", "path_finder", "path_follower", "path_drawer"],
         else
           @seekRandomCell()
 
-      getGridMap:->
-        @_gridMap
+      setGridAreasTo:(rectList..., newValue)->
+        @_gridMap.setAreasTo(rectList..., newValue)
+        @_pathFinder.setGridMap(@_gridMap)
 
 
       _onSeekDone:(results)->

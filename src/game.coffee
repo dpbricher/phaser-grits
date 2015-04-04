@@ -225,7 +225,7 @@ define ["phaser", "player", "projectile", "spawn_item", "move_ai"],
 				player2MoveAi = new MoveAi(player2, areaRect, groupWall, groupHole)
 
 				# set the unreachable areas to impassable (for now)
-				player2MoveAi.getGridMap().setAreasTo(
+				player2MoveAi.setGridAreasTo(
 					new Phaser.Rectangle(4630, 1163, 583, 559),
 					new Phaser.Rectangle(1123, 4589, 453, 578),
 					1
@@ -242,13 +242,14 @@ define ["phaser", "player", "projectile", "spawn_item", "move_ai"],
 
 						tpList.push(area)
 				)
-				player2MoveAi.getGridMap().setAreasTo(tpList..., 1)
+
+				player2MoveAi.setGridAreasTo(tpList..., 1)
 
 				# start random movement
 				player2MoveAi.seekRandomCell()
 
 				# camera
-				game.camera.follow(player1)
+				game.camera.follow(player2)
 
 			update:->
 				# collision
