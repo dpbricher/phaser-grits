@@ -16,12 +16,15 @@ define ["phaser"],
           if @_player.body.center.distance({ x:target[0], y:target[1] }) <
           @_player.body.width / 4
             ++@_nextIndex
-          else
-            dest  = new Phaser.Point(target...)
 
-            vec   = dest
-              .subtract(@_player.body.center.x, @_player.body.center.y)
-              .normalize()
+        if @hasNext()
+          target  = @_getNextNode()
+
+          dest    = new Phaser.Point(target...)
+
+          vec     = dest
+            .subtract(@_player.body.center.x, @_player.body.center.y)
+            .normalize()
 
         vec
 

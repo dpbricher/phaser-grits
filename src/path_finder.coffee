@@ -12,7 +12,6 @@ define ["phaser", "easystar"],
         @setGridMap(gridMap, acceptList) if gridMap?
 
       setGridMap:(@_gridMap, acceptList = [0])->
-        @_easyStar.setGrid(@_gridMap.getGridTransposed())
         @_easyStar.setAcceptableTiles(acceptList)
 
       setXyOffset:(x, y)->
@@ -25,6 +24,7 @@ define ["phaser", "easystar"],
           @_onXyFound.bind(this))
 
       findIj:(sI, sJ, eI, eJ, call)->
+        @_easyStar.setGrid(@_gridMap.getGridTransposed())
         @_easyStar.findPath(sI, sJ, eI, eJ, call)
         @_easyStar.calculate()
 
