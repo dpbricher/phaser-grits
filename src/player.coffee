@@ -22,8 +22,10 @@ define ["phaser"],
 				@_muzzleRight	= new Phaser.Point(-@body.width * 0.5,
 					@body.height * 0.25)
 
+				@fireVelocity	= new Phaser.Point()
+
 				@_maxHealth		=
-				@health			= 100
+				@health				= 100
 
 				@lastFireTime	= game.time.totalElapsedSeconds()
 

@@ -249,7 +249,7 @@ define ["phaser", "player", "projectile", "spawn_item", "move_ai"],
 				player2MoveAi.seekRandomCell()
 
 				# camera
-				game.camera.follow(player1)
+				game.camera.follow(player2)
 
 			update:->
 				# collision
@@ -354,61 +354,68 @@ define ["phaser", "player", "projectile", "spawn_item", "move_ai"],
 				player2MoveAi.update()
 
 				# if player is moving then advance walk animation
-				for p in [player1, player2]
-					if !p.body.velocity.isZero()
-						p.rotateLegs(velocity.angle(new Phaser.Point))
-						p.animations.next(1)
+				groupPlayer.forEach(
+					(p)->
+						if !p.body.velocity.isZero()
+							p.rotateLegs(p.body.velocity.angle(new Phaser.Point()))
+							p.animations.next(1)
+				)
 
 				player1.update()
 				player2.update()
 
 				# fire projectiles
-				velocity	= new Phaser.Point()
+				velocity	= player1.fireVelocity
 
 				velocity.x += 1 if cursors.right.isDown
 				velocity.x -= 1 if cursors.left.isDown
 				velocity.y -= 1 if cursors.up.isDown
 				velocity.y += 1 if cursors.down.isDown
 
-				if !velocity.isZero() and
-				game.time.totalElapsedSeconds() - player1.lastFireTime >=
-				RELOAD_TIME
-					velocity.normalize()
+				groupPlayer.forEach(
+					(p)->
+						velocity	= p.fireVelocity
+						if !velocity.isZero() and
+						game.time.totalElapsedSeconds() - p.lastFireTime >= RELOAD_TIME
+							velocity.normalize()
 
-					fireAngle	= velocity.angle(new Phaser.Point())
+							fireAngle	= velocity.angle(new Phaser.Point())
 
-					# set body rotation to match firing angle
-					player1.rotateBody(fireAngle)
+							# set body rotation to match firing angle
+							p.rotateBody(fireAngle)
 
-					# left and right projectiles
-					for fireOrigin in [player1.getMuzzleLeft(),
-					player1.getMuzzleRight()]
-						bullet	= new Projectile(game, fireOrigin.x,
-							fireOrigin.y, player1, 5)
-						groupProj.add(bullet)
+							# left and right projectiles
+							for fireOrigin in [p.getMuzzleLeft(),
+							p.getMuzzleRight()]
+								bullet	= new Projectile(game, fireOrigin.x,
+									fireOrigin.y, p, 5)
+								groupProj.add(bullet)
 
-						bullet.rotation			= fireAngle
+								bullet.rotation			= fireAngle
 
-						bullet.body.velocity	= velocity
-						.clone()
-						.multiply(PROJECTILE_SPEED, PROJECTILE_SPEED)
+								bullet.body.velocity	= velocity
+								.clone()
+								.multiply(PROJECTILE_SPEED, PROJECTILE_SPEED)
 
-					# left and right weapon muzzle animations
-					for i in [0, 1]
-						muzzle	= groupBody.create(0, 0, "anims")
-						muzzle.anchor.set(0.5, 0.5)
+							# left and right weapon muzzle animations
+							for i in [0, 1]
+								muzzle	= groupBody.create(0, 0, "anims")
+								muzzle.anchor.set(0.5, 0.5)
 
-						muzzle.animations.add("muzzle",
-							Phaser.Animation.generateFrameNames(
-								"machinegun_muzzle_", 0, 7, ".png", 4),
-							25, true)
-						muzzle.play("muzzle", null, false, true)
+								muzzle.animations.add("muzzle",
+									Phaser.Animation.generateFrameNames(
+										"machinegun_muzzle_", 0, 7, ".png", 4),
+									25, true)
+								muzzle.play("muzzle", null, false, true)
 
-					muzzle.scale.set(1.0, -1.0)
+							muzzle.scale.set(1.0, -1.0)
 
-					sfx.fire.play()
+							sfx.fire.play()
 
-					player1.lastFireTime	= game.time.totalElapsedSeconds()
+							p.lastFireTime	= game.time.totalElapsedSeconds()
+
+						p.fireVelocity.set(0, 0)
+				)
 
 			# render:->
 			# 	groupTeleport.forEach(
