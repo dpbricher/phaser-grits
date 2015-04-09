@@ -1,5 +1,5 @@
-define ["phaser", "player", "projectile", "spawn_item", "move_ai"],
-	(Phaser, Player, Projectile, SpawnItem, MoveAi)->
+define ["phaser", "player", "projectile", "spawn_item", "move_ai", "fire_ai"],
+	(Phaser, Player, Projectile, SpawnItem, MoveAi, FireAi)->
 		class Game extends Phaser.State
 			PLAYER_SPEED		= 500
 			PROJECTILE_SPEED	= 1000
@@ -38,6 +38,7 @@ define ["phaser", "player", "projectile", "spawn_item", "move_ai"],
 			playerSpawn2	= null
 
 			player2MoveAi	= null
+			player2FireAi	= null
 
 			moveKeys		= null
 			cursors			= null
@@ -248,8 +249,11 @@ define ["phaser", "player", "projectile", "spawn_item", "move_ai"],
 				# start random movement
 				player2MoveAi.seekRandomCell()
 
+				# player 2 fire ai
+				player2FireAi	= new FireAi(player2, game.camera.width / 2)
+
 				# camera
-				game.camera.follow(player2)
+				game.camera.follow(player1)
 
 			update:->
 				# collision
@@ -371,6 +375,8 @@ define ["phaser", "player", "projectile", "spawn_item", "move_ai"],
 				velocity.x -= 1 if cursors.left.isDown
 				velocity.y -= 1 if cursors.up.isDown
 				velocity.y += 1 if cursors.down.isDown
+
+				player2.fireVelocity	= player2FireAi.getFireVec(player1.body.center.clone())
 
 				groupPlayer.forEach(
 					(p)->
