@@ -250,7 +250,8 @@ define ["phaser", "player", "projectile", "spawn_item", "move_ai", "fire_ai"],
 				player2MoveAi.seekRandomCell()
 
 				# player 2 fire ai
-				player2FireAi	= new FireAi(player2, game.camera.width / 2)
+				player2FireAi	= new FireAi(player2, FireAi.makeRectSearch(
+					game.camera.view))
 
 				# camera
 				game.camera.follow(player1)
