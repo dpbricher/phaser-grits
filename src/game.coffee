@@ -316,15 +316,8 @@ define ["phaser", "player", "projectile", "spawn_item", "move_ai", "fire_ai"],
 				game.physics.arcade.overlap(groupPlayer, groupSpawn,
 					(p, s)->
 						if s.visible
-							s.collisionFunction(p)
-
-							s.visible			= false
-							s.lastCollectTime	=
-								game.time.totalElapsedSeconds()
-							s.audio.play()
+							s.onCollision(p)
 				)
-
-				now		= game.time.totalElapsedSeconds()
 
 				# bullet collision here; group on group collision won't catch
 				# those spawned inside a wall (e.g. due to offset)
@@ -340,8 +333,7 @@ define ["phaser", "player", "projectile", "spawn_item", "move_ai", "fire_ai"],
 				# spawn item generation
 				groupSpawn.forEach(
 					(s)->
-						if now >= s.lastCollectTime + 3.0
-							s.visible	= true
+						s.update()
 				)
 
 				# movement
