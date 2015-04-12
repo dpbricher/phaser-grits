@@ -145,22 +145,32 @@ define ["phaser", "player", "projectile", "spawn_item", "move_ai", "fire_ai"],
 						animFramePrefix, audio, collisionFunction)
 					groupSpawn.add(item)
 
+				playSoundCall				= (sound, item)=>
+					centre	= item.body.center
+
+					@playSound(sound, centre.x, centre.y)
+
 				for obj in tileMap.objects.environment
 					switch obj.name
 						when "HealthSpawner"
 							createCanister(obj, "canister_health",
-								"energy_canister_red_", sfx.item,
-								(player)->
-									player.gainHealth(20)
+								"energy_canister_red_", (player, item)->
+										player.gainHealth(20)
+
+										playSoundCall(sfx.item, item)
 							)
 
 						when "EnergySpawner"
 							createCanister(obj, "canister_energy",
-								"energy_canister_blue_", sfx.energy)
+								"energy_canister_blue_", (player, item)->
+										playSoundCall(sfx.energy, item)
+							)
 
 						when "QuadDamageSpawner"
 							createCanister(obj, "quad_damage", "quad_damage_",
-								sfx.quad)
+								(player, item)->
+									playSoundCall(sfx.quad, item)
+							)
 
 						when "Team0Spawn0"
 							playerSpawn	= new Phaser.Point(
@@ -421,3 +431,13 @@ define ["phaser", "player", "projectile", "spawn_item", "move_ai", "fire_ai"],
 			# 		(t)->
 			# 			game.debug.body(t)
 			# 	)
+
+			playSound:(sound, sourceX, sourceY)->
+				volume	= 2.0 - Phaser.Point.distance({ x:sourceX, y:sourceY },
+					player1.body.center) / game.camera.width * 1.0
+
+				volume	= Math.min(Math.max(volume, 0), 1.0)
+
+				console.log volume
+
+				sound.play("", 0, volume)

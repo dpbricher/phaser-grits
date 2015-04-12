@@ -10,7 +10,7 @@ define ["phaser"],
 			# (collidingPlayer)->
 			# 	[logic that affects the player]
 			#
-			constructor:(game, x, y, animName, animFramePrefix, @audio,
+			constructor:(game, x, y, animName, animFramePrefix,
 			@collisionFunction = (->), minTime = SpawnItem.DEFAULT_MIN,
 			maxTime = SpawnItem.DEFAULT_MAX)->
 				super(game, x, y, "anims")
@@ -20,7 +20,7 @@ define ["phaser"],
 				@anchor.set(0.5, 0.5)
 				@body.immovable		= true
 
-				@lastCollectTime	= 0
+				@nextSpawnTime		= Infinity
 
 				@visible					= false
 
@@ -47,7 +47,5 @@ define ["phaser"],
 				@collisionTime		= @game.time.totalElapsedSeconds()
 				@visible					= false
 
-				@audio.play()
-
-				@collisionFunction(player)
+				@collisionFunction(player, this)
 				@setNextSpawnTime()
