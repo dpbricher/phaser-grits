@@ -24,8 +24,11 @@ define ["phaser"],
 
 				@fireVelocity	= new Phaser.Point()
 
+				@_maxShield		=
 				@_maxHealth		=
 				@health				= 100
+
+				@shield				= 0
 
 				@lastFireTime	= game.time.totalElapsedSeconds()
 
@@ -58,6 +61,20 @@ define ["phaser"],
 			loseHealth:(amount)->
 				@health	= Math.max(@health - amount, 0)
 
+			gainShield:(amount)->
+				@shield	= Math.min(@shield + amount, @_maxShield)
+
+			loseShield:(amount)->
+				@shield	= Math.max(@shield - amount, 0)
+
+			# reduces shield by amount argument and if shield is less then this value
+			# then reduces health by the difference
+			damage:(amount)->
+				excess	= amount - @shield
+
+				@loseShield(amount)
+				@loseHealth(excess) if excess > 0
+
 			update:->
 				@bodyGroup.x		= @body.x + @body.width / 2
 				@bodyGroup.y		= @body.y + @body.height / 2
@@ -65,7 +82,7 @@ define ["phaser"],
 				@healthDisplay.x	= @body.x
 				@healthDisplay.y	= @body.y
 
-				@healthDisplay.text	= @health.toString()
+				@healthDisplay.text	= "#{@health}+#{@shield}"
 
 
 			# make the animation of this sprite the player's legs

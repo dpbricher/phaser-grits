@@ -156,7 +156,10 @@ define ["phaser", "player", "projectile", "spawn_item", "move_ai", "fire_ai"],
 
 						when "EnergySpawner"
 							createCanister(obj, "canister_energy",
-								"energy_canister_blue_", sfx.energy)
+								"energy_canister_blue_", sfx.energy,
+								(player)->
+									player.gainShield(20)
+							)
 
 						when "QuadDamageSpawner"
 							createCanister(obj, "quad_damage", "quad_damage_",
@@ -300,7 +303,7 @@ define ["phaser", "player", "projectile", "spawn_item", "move_ai", "fire_ai"],
 						if proj.getOwner() != player
 							detonateProj(proj)
 
-							player.loseHealth(proj.getDamage())
+							player.damage(proj.getDamage())
 
 							if player.health <= 0
 								detonatePlayer(player, player.bodyGroup)
