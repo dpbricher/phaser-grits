@@ -1,5 +1,6 @@
-define ["phaser", "player", "projectile", "spawn_item", "move_ai", "fire_ai"],
-	(Phaser, Player, Projectile, SpawnItem, MoveAi, FireAi)->
+define ["phaser", "player", "projectile", "spawn_item", "move_ai", "fire_ai",
+	"mini_map"],
+	(Phaser, Player, Projectile, SpawnItem, MoveAi, FireAi, MiniMap)->
 		class Game extends Phaser.State
 			PLAYER_SPEED		= 500
 			PROJECTILE_SPEED	= 1000
@@ -39,6 +40,8 @@ define ["phaser", "player", "projectile", "spawn_item", "move_ai", "fire_ai"],
 
 			player2MoveAi	= null
 			player2FireAi	= null
+
+			miniMap				= null
 
 			moveKeys		= null
 			cursors			= null
@@ -193,16 +196,16 @@ define ["phaser", "player", "projectile", "spawn_item", "move_ai", "fire_ai"],
 							teleporter.destY	= parseFloat(teleDest[2] || 0)
 
 				# players
-				createPlayer	= (x, y)->
-					player	= new Player(game, x, y, PLAYER_SPEED)
+				createPlayer	= (x, y, mapColour)->
+					player	= new Player(game, x, y, PLAYER_SPEED, mapColour)
 
 					groupPlayer.add(player)
 					groupBody.add(player.bodyGroup)
 
 					player
 
-				player1		= createPlayer(playerSpawn.x, playerSpawn.y)
-				player2		= createPlayer(playerSpawn2.x, playerSpawn2.y)
+				player1		= createPlayer(playerSpawn.x, playerSpawn.y, 0xff)
+				player2		= createPlayer(playerSpawn2.x, playerSpawn2.y, 0xff0000)
 
 				# input
 				keyboard	= game.input.keyboard
@@ -255,6 +258,19 @@ define ["phaser", "player", "projectile", "spawn_item", "move_ai", "fire_ai"],
 				# player 2 fire ai
 				player2FireAi	= new FireAi(player2, FireAi.makeRectSearch(
 					game.camera.view))
+
+				# mini map
+				miniW			= 200
+				miniH			= miniW * game.world.height / game.world.width
+
+				miniMap		= new MiniMap(game, game.camera.view.width - miniW, 0, miniW,
+					miniH)
+
+				miniMap.alpha					= 0.5
+				miniMap.fixedToCamera	= true
+
+				groupWall.forEach((w)-> miniMap.addWall(w))
+				groupHole.forEach((w)-> miniMap.addHole(w))
 
 				# camera
 				game.camera.follow(player1)
@@ -338,6 +354,9 @@ define ["phaser", "player", "projectile", "spawn_item", "move_ai", "fire_ai"],
 					(s)->
 						s.update()
 				)
+
+				# mini map
+				miniMap.redraw(player1, player2)
 
 				# movement
 				velocity	= player1.body.velocity.set(0, 0)

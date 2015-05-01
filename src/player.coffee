@@ -7,8 +7,10 @@
 define ["phaser"],
 	(Phaser)->
 		class Player extends Phaser.Sprite
-			constructor:(game, x, y, @moveSpeed)->
+			constructor:(game, x, y, @moveSpeed, mapColour)->
 				super(game, x, y, "anims")
+
+				@mapColour	= mapColour || (Math.random() * (0xffffff + 1)) | 0
 
 				game.add.existing(this)
 				game.physics.arcade.enable(this)
