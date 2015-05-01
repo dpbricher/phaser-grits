@@ -1,9 +1,8 @@
 define ["phaser"],
   (Phaser)->
-    # class MiniMap extends Phaser.Graphics
     class MiniMap extends Phaser.Group
-      constructor:(game, x, y, @mapWidth, @mapHeight, @bgColour = 0xffffff,
-      @wallColour = 0x0, @holeColour = 0x666666)->
+      constructor:(game, x, y, @mapWidth, @mapHeight, @_bgColour = 0xffffff,
+      @_wallColour = 0x0, @_holeColour = 0x666666)->
         super(game)
 
         [@x, @y]    = [x, y]
@@ -13,7 +12,7 @@ define ["phaser"],
         @_posLayer  = new Phaser.Graphics(game, 0, 0)
 
         @_bgLayer
-        .beginFill(@bgColour)
+        .beginFill(@_bgColour)
         .drawRect(0, 0, @mapWidth, @mapHeight)
         .endFill()
 
@@ -27,10 +26,10 @@ define ["phaser"],
         game.add.existing(this)
 
       addWall:(obj)->
-        @addObstacle(obj, @wallColour)
+        @addObstacle(obj, @_wallColour)
 
       addHole:(obj)->
-        @addObstacle(obj, @holeColour)
+        @addObstacle(obj, @_holeColour)
 
       addObstacle:(obj, colour)->
         b = obj.body
