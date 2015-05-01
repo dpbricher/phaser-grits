@@ -1,5 +1,6 @@
-define ["phaser", "player", "projectile", "spawn_item", "move_ai", "fire_ai"],
-	(Phaser, Player, Projectile, SpawnItem, MoveAi, FireAi)->
+define ["phaser", "player", "projectile", "spawn_item", "move_ai", "fire_ai",
+	"mini_map"],
+	(Phaser, Player, Projectile, SpawnItem, MoveAi, FireAi, MiniMap)->
 		class Game extends Phaser.State
 			PLAYER_SPEED		= 500
 			PROJECTILE_SPEED	= 1000
@@ -39,6 +40,8 @@ define ["phaser", "player", "projectile", "spawn_item", "move_ai", "fire_ai"],
 
 			player2MoveAi	= null
 			player2FireAi	= null
+
+			miniMap				= null
 
 			moveKeys		= null
 			cursors			= null
@@ -256,6 +259,15 @@ define ["phaser", "player", "projectile", "spawn_item", "move_ai", "fire_ai"],
 				player2FireAi	= new FireAi(player2, FireAi.makeRectSearch(
 					game.camera.view))
 
+				# mini map
+				miniW			= 200
+				miniH			= miniW * game.world.height / game.world.width
+
+				miniMap		= new MiniMap(game, game.camera.view.width - miniW, 0, miniW,
+					miniH)
+
+				miniMap.fixedToCamera	= true
+
 				# camera
 				game.camera.follow(player1)
 
@@ -263,6 +275,8 @@ define ["phaser", "player", "projectile", "spawn_item", "move_ai", "fire_ai"],
 				# collision
 				game.physics.arcade.collide(player1, groupWall)
 				game.physics.arcade.collide(player1, groupHole)
+
+				miniMap.redraw(player1, player2)
 
 				detonateProj	= (proj)->
 					proj.kill()
