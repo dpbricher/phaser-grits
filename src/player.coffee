@@ -4,8 +4,8 @@
 # the player's body elements are added to a seperate group and need to be added
 # to the game seperately
 #
-define ["phaser"],
-	(Phaser)->
+define ["phaser", "quad_damage_mod"],
+	(Phaser, QuadDamageModifier)->
 		class Player extends Phaser.Sprite
 			constructor:(game, x, y, @moveSpeed, mapColour)->
 				super(game, x, y, "anims")
@@ -32,6 +32,10 @@ define ["phaser"],
 
 				@shield				= 0
 
+				@_baseDamage	= 1
+
+				@_modifierList	= []
+
 				@lastFireTime	= game.time.totalElapsedSeconds()
 
 				@healthDisplay	= game.add.text(0, 0, "")
@@ -57,6 +61,17 @@ define ["phaser"],
 			getMuzzleRight:->
 				@_getTransformedMuzzle(@_muzzleRight)
 
+			getDamageModifier:->
+				if @_hasModifier(QuadDamageModifier)
+					@_baseDamage * 4
+				else
+					@_baseDamage
+
+			_hasModifier:(ModClass)->
+				@_modifierList.some((i)->
+					i.constructor == ModClass::constructor
+				)
+
 			gainHealth:(amount)->
 				@health	= Math.min(@health + amount, @_maxHealth)
 
@@ -68,6 +83,9 @@ define ["phaser"],
 
 			loseShield:(amount)->
 				@shield	= Math.max(@shield - amount, 0)
+
+			addModifier:(modifier)->
+				@_modifierList.push(modifier)
 
 			# reduces shield by amount argument and if shield is less then this value
 			# then reduces health by the difference
@@ -86,6 +104,10 @@ define ["phaser"],
 
 				@healthDisplay.text	= "#{@health}+#{@shield}"
 
+				# purge elasped modifiers
+				for i in [@_modifierList.length - 1..0] by -1
+					if @game.time.totalElapsedSeconds() >= @_modifierList[i].endTime
+						@_modifierList.splice(i, 1)
 
 			# make the animation of this sprite the player's legs
 			_addLegAnim:->

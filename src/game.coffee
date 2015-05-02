@@ -1,6 +1,7 @@
 define ["phaser", "player", "projectile", "spawn_item", "move_ai", "fire_ai",
-	"mini_map"],
-	(Phaser, Player, Projectile, SpawnItem, MoveAi, FireAi, MiniMap)->
+"mini_map", "quad_damage_mod"],
+	(Phaser, Player, Projectile, SpawnItem, MoveAi, FireAi, MiniMap,
+	QuadDamageModifier)->
 		class Game extends Phaser.State
 			PLAYER_SPEED		= 500
 			PROJECTILE_SPEED	= 1000
@@ -166,7 +167,13 @@ define ["phaser", "player", "projectile", "spawn_item", "move_ai", "fire_ai",
 
 						when "QuadDamageSpawner"
 							createCanister(obj, "quad_damage", "quad_damage_",
-								sfx.quad)
+								sfx.quad,
+								(player)->
+									player.addModifier(
+										new QuadDamageModifier(player,
+											game.time.totalElapsedSeconds() + 10)
+									)
+							)
 
 						when "Team0Spawn0"
 							playerSpawn	= new Phaser.Point(
@@ -409,7 +416,8 @@ define ["phaser", "player", "projectile", "spawn_item", "move_ai", "fire_ai",
 							for fireOrigin in [p.getMuzzleLeft(),
 							p.getMuzzleRight()]
 								bullet	= new Projectile(game, fireOrigin.x,
-									fireOrigin.y, p, 5)
+									fireOrigin.y, p, 5 * p.getDamageModifier())
+
 								groupProj.add(bullet)
 
 								bullet.rotation			= fireAngle
