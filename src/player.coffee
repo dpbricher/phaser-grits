@@ -55,6 +55,12 @@ define ["phaser", "quad_damage_mod"],
 			getBodyRotation:->
 				@bodyGroup.rotation
 
+			hideBody:->
+				@bodyGroup.visible	= false
+
+			showBody:->
+				@bodyGroup.visible	= true
+
 			getMuzzleLeft:->
 				@_getTransformedMuzzle(@_muzzleLeft)
 

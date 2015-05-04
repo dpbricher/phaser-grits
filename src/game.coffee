@@ -1,7 +1,7 @@
 define ["phaser", "player", "projectile", "spawn_item", "move_ai", "fire_ai",
-"mini_map", "quad_damage_mod"],
+"mini_map", "quad_damage_mod", "spawn_info"],
 	(Phaser, Player, Projectile, SpawnItem, MoveAi, FireAi, MiniMap,
-	QuadDamageModifier)->
+	QuadDamageModifier, SpawnInfo)->
 		class Game extends Phaser.State
 			PLAYER_SPEED		= 500
 			PROJECTILE_SPEED	= 1000
@@ -46,6 +46,8 @@ define ["phaser", "player", "projectile", "spawn_item", "move_ai", "fire_ai",
 
 			moveKeys		= null
 			cursors			= null
+
+			spawnInfoList	= []
 
 			game			= null
 
@@ -301,11 +303,7 @@ define ["phaser", "player", "projectile", "spawn_item", "move_ai", "fire_ai",
 
 				detonatePlayer	= (legs, bodyGroup)->
 					legs.kill()
-					bodyGroup.forEach(
-						(sprite)->
-							sprite.kill()
-						@
-					)
+					legs.hideBody()
 
 					anim	= groupVisual.create(legs.body.center.x,
 						legs.body.center.y, "anims")
@@ -330,6 +328,18 @@ define ["phaser", "player", "projectile", "spawn_item", "move_ai", "fire_ai",
 
 							if player.health <= 0
 								detonatePlayer(player, player.bodyGroup)
+
+								switch player
+									when player1
+										spawnPoint	= playerSpawn
+
+									else
+										spawnPoint	= playerSpawn2
+										player2MoveAi.stop()
+
+								spawnInfoList.push(new SpawnInfo(player,
+									game.time.totalElapsedSeconds() + 2, spawnPoint.x,
+									spawnPoint.y))
 				)
 
 				game.physics.arcade.overlap(groupPlayer, groupTeleport,
@@ -446,8 +456,29 @@ define ["phaser", "player", "projectile", "spawn_item", "move_ai", "fire_ai",
 						p.fireVelocity.set(0, 0)
 				)
 
+				for i in [spawnInfoList.length - 1..0] by -1
+					info	= spawnInfoList[i]
+
+					if game.time.totalElapsedSeconds() >= info.spawnTime
+						@spawnPlayer(info)
+						spawnInfoList.splice(i, 1)
+
 			# render:->
 			# 	groupTeleport.forEach(
 			# 		(t)->
 			# 			game.debug.body(t)
 			# 	)
+
+			spawnPlayer:(spawnInfo)->
+				p	= spawnInfo.player
+
+				p.revive(spawnInfo.health)
+				p.showBody()
+
+				p.shield	= spawnInfo.shield
+				p.moveTo(spawnInfo.spawnX, spawnInfo.spawnY)
+
+				# restart move ai if npc
+				setTimeout(
+					->player2MoveAi.seekRandomCell()
+				, 0) if p == player2

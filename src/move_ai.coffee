@@ -25,6 +25,9 @@ define ["grid_mapper", "path_finder", "path_follower", "path_drawer"],
         @_pathFinder.findXy(@_player.body.center.x, @_player.body.center.y, x,
           y, (r)=>@_onSeekDone(r))
 
+      stop:->
+        @_follower.setPath([])
+
       update:->
         if @_follower.hasNext()
           newVel  = @_follower.getMoveVec()
